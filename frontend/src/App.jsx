@@ -42,10 +42,10 @@ function App() {
       <div className="main-content">
         <header className="app-header">
           <h1 className="app-title">
-            Crawl4AI Tester
+            Veluga Website Crawl Tester
           </h1>
           <p className="app-subtitle">
-            Test and verify Crawl4AI scraping capabilities. View LLM-friendly Markdown and raw HTML instantly.
+            Test and verify Veluga scraping capabilities. View LLM-friendly Markdown and raw HTML instantly.
           </p>
         </header>
 
