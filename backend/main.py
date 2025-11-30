@@ -80,13 +80,13 @@ def analyze_structure(html: str) -> PageStructure:
     # Keywords: header, top, gnb (Global Navigation Bar), head
     header = find_element_by_heuristics(soup, ['header'], ['header', 'top', 'gnb', 'head'])
     if header:
-        structure.header = str(header)[:500] + "..." if len(str(header)) > 500 else str(header)
+        structure.header = str(header)[:1000] + "..." if len(str(header)) > 1000 else str(header)
     
     # 2. Navigation
     # Keywords: nav, menu, lnb (Local Navigation Bar)
     nav = find_element_by_heuristics(soup, ['nav'], ['nav', 'menu', 'lnb'])
     if nav:
-        structure.navigation = str(nav)[:500] + "..." if len(str(nav)) > 500 else str(nav)
+        structure.navigation = str(nav)[:1000] + "..." if len(str(nav)) > 1000 else str(nav)
 
     # 3. Main Content
     # Keywords: main, content, body, article, center, container, wrapper
@@ -105,13 +105,13 @@ def analyze_structure(html: str) -> PageStructure:
                 main = div
 
     if main:
-        structure.main_content = str(main)[:500] + "..." if len(str(main)) > 500 else str(main)
+        structure.main_content = str(main)[:2000] + "..." if len(str(main)) > 2000 else str(main)
 
     # 4. Footer
     # Keywords: footer, bottom, info, copyright
     footer = find_element_by_heuristics(soup, ['footer'], ['footer', 'bottom', 'info', 'copyright'])
     if footer:
-        structure.footer = str(footer)[:500] + "..." if len(str(footer)) > 500 else str(footer)
+        structure.footer = str(footer)[:1000] + "..." if len(str(footer)) > 1000 else str(footer)
 
     # 5. Ads (Heuristic)
     ad_selectors = [
@@ -135,8 +135,19 @@ def analyze_structure(html: str) -> PageStructure:
 @app.post("/api/v1/crawl", response_model=CrawlResponse)
 async def crawl(request: CrawlRequest):
     try:
+        # Script to scroll to bottom to trigger lazy loading
+        scroll_script = """
+            window.scrollTo(0, document.body.scrollHeight);
+            await new Promise(r => setTimeout(r, 2000));
+            window.scrollTo(0, document.body.scrollHeight);
+        """
+        
         async with AsyncWebCrawler(verbose=True) as crawler:
-            result = await crawler.arun(url=request.url, bypass_cache=True)
+            result = await crawler.arun(
+                url=request.url, 
+                bypass_cache=True,
+                js_code=scroll_script
+            )
             
             if not result.success:
                  return CrawlResponse(
