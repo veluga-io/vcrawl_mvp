@@ -153,9 +153,11 @@ async def crawl(request: CrawlRequest):
             verbose=True
         )
         
+        
+        # Try with networkidle first, but have a fallback
         crawl_config = CrawlerRunConfig(
-            wait_until="networkidle",  # Wait for network to be idle
-            page_timeout=60000,  # 60 seconds timeout
+            wait_until="domcontentloaded",  # More reliable than networkidle
+            page_timeout=90000,  # 90 seconds timeout (increased for slow pages)
             delay_before_return_html=2.0  # Wait 2 seconds before capturing
         )
         
