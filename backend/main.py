@@ -135,18 +135,28 @@ def analyze_structure(html: str) -> PageStructure:
 @app.post("/api/v1/crawl", response_model=CrawlResponse)
 async def crawl(request: CrawlRequest):
     try:
-        # Script to scroll to bottom to trigger lazy loading
-        scroll_script = """
-            window.scrollTo(0, document.body.scrollHeight);
-            await new Promise(r => setTimeout(r, 2000));
-            window.scrollTo(0, document.body.scrollHeight);
-        """
+        url = request.url
+        if not url.startswith(('http://', 'https://')):
+            url = 'https://' + url
+
         
-        async with AsyncWebCrawler(verbose=True) as crawler:
+        from crawl4ai import BrowserConfig, CrawlerRunConfig
+        
+        browser_config = BrowserConfig(
+            headless=True,
+            verbose=True
+        )
+        
+        crawl_config = CrawlerRunConfig(
+            wait_until="networkidle",  # Wait for network to be idle
+            page_timeout=60000,  # 60 seconds timeout
+            delay_before_return_html=2.0  # Wait 2 seconds before capturing
+        )
+        
+        async with AsyncWebCrawler(config=browser_config, verbose=True) as crawler:
             result = await crawler.arun(
-                url=request.url, 
-                bypass_cache=True,
-                js_code=scroll_script
+                url=url, 
+                config=crawl_config
             )
             
             if not result.success:
@@ -157,11 +167,16 @@ async def crawl(request: CrawlRequest):
             
             # Analyze structure
             structure_data = analyze_structure(result.html)
+            
+            # Debug logging
+            print(f"[DEBUG] Markdown length: {len(result.markdown) if result.markdown else 0}")
+            print(f"[DEBUG] HTML length: {len(result.html) if result.html else 0}")
+            print(f"[DEBUG] Cleaned HTML length: {len(result.cleaned_html) if result.cleaned_html else 0}")
 
             return CrawlResponse(
                 success=True,
-                markdown=result.markdown,
-                html=result.cleaned_html or result.html,
+                markdown=result.markdown or "",
+                html=result.cleaned_html or result.html or "",
                 structure=structure_data,
                 metadata={
                     "url": result.url,

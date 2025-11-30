@@ -14,13 +14,18 @@ function App() {
     setError(null);
     setResult(null);
 
+    let urlToCrawl = url.trim();
+    if (!/^https?:\/\//i.test(urlToCrawl)) {
+      urlToCrawl = 'https://' + urlToCrawl;
+    }
+
     try {
       const response = await fetch('/api/v1/crawl', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url: urlToCrawl }),
       });
 
       const data = await response.json();
