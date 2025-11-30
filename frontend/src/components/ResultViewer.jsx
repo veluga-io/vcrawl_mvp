@@ -2,10 +2,25 @@ import React, { useState } from 'react';
 import '../index.css';
 
 const ResultViewer = ({ data }) => {
-    const [activeTab, setActiveTab] = useState('markdown');
+    const [activeTab, setActiveTab] = useState('content_markdown');
+
+    const getContentForCopy = () => {
+        switch (activeTab) {
+            case 'markdown':
+                return data.markdown;
+            case 'html':
+                return data.html;
+            case 'content_markdown':
+                return data.content_only_markdown;
+            case 'content_html':
+                return data.content_only_html;
+            default:
+                return '';
+        }
+    };
 
     const handleCopy = () => {
-        const content = activeTab === 'markdown' ? data.markdown : data.html;
+        const content = getContentForCopy();
         navigator.clipboard.writeText(content);
     };
 
@@ -14,16 +29,28 @@ const ResultViewer = ({ data }) => {
             <div className="result-header">
                 <div className="tabs">
                     <button
+                        onClick={() => setActiveTab('content_markdown')}
+                        className={`tab-button ${activeTab === 'content_markdown' ? 'active' : ''}`}
+                    >
+                        Content (MD)
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('content_html')}
+                        className={`tab-button ${activeTab === 'content_html' ? 'active' : ''}`}
+                    >
+                        Content (HTML)
+                    </button>
+                    <button
                         onClick={() => setActiveTab('markdown')}
                         className={`tab-button ${activeTab === 'markdown' ? 'active' : ''}`}
                     >
-                        Markdown (LLM)
+                        Full Markdown
                     </button>
                     <button
                         onClick={() => setActiveTab('html')}
                         className={`tab-button ${activeTab === 'html' ? 'active' : ''}`}
                     >
-                        Raw HTML
+                        Full HTML
                     </button>
                     <button
                         onClick={() => setActiveTab('structure')}
@@ -64,7 +91,10 @@ const ResultViewer = ({ data }) => {
                 ) : (
                     <pre className="code-block">
                         <code>
-                            {activeTab === 'markdown' ? data.markdown : data.html}
+                            {activeTab === 'markdown' && data.markdown}
+                            {activeTab === 'html' && data.html}
+                            {activeTab === 'content_markdown' && data.content_only_markdown}
+                            {activeTab === 'content_html' && data.content_only_html}
                         </code>
                     </pre>
                 )}

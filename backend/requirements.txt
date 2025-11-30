@@ -3,3 +3,4 @@ uvicorn
 crawl4ai
 playwright
 beautifulsoup4
+html2text

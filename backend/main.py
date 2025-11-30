@@ -4,6 +4,7 @@ from crawl4ai import AsyncWebCrawler
 import uvicorn
 import asyncio
 import sys
+import html2text
 
 # Fix for Windows asyncio loop policy
 if sys.platform == 'win32':
@@ -28,6 +29,8 @@ class CrawlResponse(BaseModel):
     success: bool
     markdown: str = ""
     html: str = ""
+    content_only_markdown: str = ""  # Main content only in markdown
+    content_only_html: str = ""      # Main content only in HTML
     structure: PageStructure = PageStructure()
     metadata: dict = {}
     error_message: str = ""
@@ -72,9 +75,11 @@ def find_element_by_heuristics(soup, tags, keywords):
             
     return best_candidate
 
-def analyze_structure(html: str) -> PageStructure:
+def analyze_structure(html: str):
+    """Analyze page structure and return both structure data and main content element"""
     soup = BeautifulSoup(html, 'html.parser')
     structure = PageStructure()
+    main_element = None  # Store the full main element
 
     # 1. Header
     # Keywords: header, top, gnb (Global Navigation Bar), head
@@ -105,6 +110,7 @@ def analyze_structure(html: str) -> PageStructure:
                 main = div
 
     if main:
+        main_element = main  # Store the full element
         structure.main_content = str(main)[:2000] + "..." if len(str(main)) > 2000 else str(main)
 
     # 4. Footer
@@ -130,7 +136,7 @@ def analyze_structure(html: str) -> PageStructure:
         if len(found_ads) >= 5: break
     
     structure.ads = found_ads
-    return structure
+    return structure, main_element
 
 @app.post("/api/v1/crawl", response_model=CrawlResponse)
 async def crawl(request: CrawlRequest):
@@ -165,18 +171,34 @@ async def crawl(request: CrawlRequest):
                     error_message=result.error_message or "Unknown error occurred"
                 )
             
-            # Analyze structure
-            structure_data = analyze_structure(result.html)
+            # Analyze structure and get main content element
+            structure_data, main_element = analyze_structure(result.html)
+            
+            # Extract content-only versions
+            content_only_html = ""
+            content_only_markdown = ""
+            
+            if main_element:
+                content_only_html = str(main_element)
+                # Convert HTML to markdown
+                h = html2text.HTML2Text()
+                h.ignore_links = False
+                h.ignore_images = False
+                content_only_markdown = h.handle(content_only_html)
             
             # Debug logging
             print(f"[DEBUG] Markdown length: {len(result.markdown) if result.markdown else 0}")
             print(f"[DEBUG] HTML length: {len(result.html) if result.html else 0}")
             print(f"[DEBUG] Cleaned HTML length: {len(result.cleaned_html) if result.cleaned_html else 0}")
+            print(f"[DEBUG] Content-only HTML length: {len(content_only_html)}")
+            print(f"[DEBUG] Content-only Markdown length: {len(content_only_markdown)}")
 
             return CrawlResponse(
                 success=True,
                 markdown=result.markdown or "",
                 html=result.cleaned_html or result.html or "",
+                content_only_markdown=content_only_markdown,
+                content_only_html=content_only_html,
                 structure=structure_data,
                 metadata={
                     "url": result.url,
