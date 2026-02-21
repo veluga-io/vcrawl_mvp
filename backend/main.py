@@ -47,6 +47,9 @@ def _patched_completion(*args, **kwargs):
         if "max_tokens" in kwargs:
             kwargs["max_completion_tokens"] = kwargs.pop("max_tokens")
             
+        # 3. Add reasoning effort for gpt-5 family
+        kwargs["reasoning_effort"] = "low"
+            
     return _original_completion(*args, **kwargs)
 
 litellm.completion = _patched_completion

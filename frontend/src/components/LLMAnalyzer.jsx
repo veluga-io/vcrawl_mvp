@@ -19,8 +19,9 @@ const getDataBySource = (data, source) => {
     }
 };
 
-const LLMAnalyzer = ({ crawlResult, selectedModel }) => {
+const LLMAnalyzer = ({ crawlResult }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [llmModel, setLlmModel] = useState('openai/gpt-4o');
     const [source, setSource] = useState('content_markdown');
     const [content, setContent] = useState('');
     const [instruction, setInstruction] = useState('이 내용을 분석하여 핵심 내용, 주요 키워드, 요약을 마크다운 형식으로 작성해 주세요.');
@@ -46,7 +47,7 @@ const LLMAnalyzer = ({ crawlResult, selectedModel }) => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     content,
-                    llm_model: selectedModel,
+                    llm_model: llmModel,
                     instruction,
                 }),
             });
@@ -63,7 +64,7 @@ const LLMAnalyzer = ({ crawlResult, selectedModel }) => {
         }
     };
 
-    const modelLabel = selectedModel && selectedModel !== 'none' ? selectedModel : null;
+    const modelLabel = llmModel && llmModel !== 'none' ? llmModel : null;
 
     return (
         <div className="llm-analyzer-wrapper">
@@ -81,6 +82,29 @@ const LLMAnalyzer = ({ crawlResult, selectedModel }) => {
 
             {isOpen && (
                 <div className="llm-analyzer-panel">
+                    {/* Model selector */}
+                    <div className="llm-analyzer-row">
+                        <label className="llm-analyzer-label">LLM Model</label>
+                        <select
+                            value={llmModel}
+                            onChange={(e) => setLlmModel(e.target.value)}
+                            disabled={isLoading}
+                            className="model-select"
+                            style={{ padding: '0.4rem', borderRadius: '4px', backgroundColor: '#333', color: '#fff', border: '1px solid #444' }}
+                        >
+                            <option value="none" disabled>Select Model</option>
+                            <optgroup label="──── Gemini ────">
+                                <option value="gemini/gemini-3-pro-preview">Gemini 3 Pro Preview</option>
+                                <option value="gemini/gemini-3-flash-preview">Gemini 3 Flash Preview</option>
+                            </optgroup>
+                            <optgroup label="──── OpenAI ────">
+                                <option value="openai/gpt-5-mini">GPT-5 Mini - low</option>
+                                <option value="openai/gpt-5-nano">GPT-5 Nano - low</option>
+                                <option value="openai/gpt-4o">GPT-4o</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
                     {/* Source selector */}
                     <div className="llm-analyzer-row">
                         <label className="llm-analyzer-label">Content Source</label>

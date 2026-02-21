@@ -9,13 +9,11 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
-  const [activeModel, setActiveModel] = useState('none');
 
-  const handleAnalyze = async (url, llmModel) => {
+  const handleAnalyze = async (url) => {
     setIsLoading(true);
     setError(null);
     setResult(null);
-    setActiveModel(llmModel);
 
     let urlToCrawl = url.trim();
     if (!/^https?:\/\//i.test(urlToCrawl)) {
@@ -29,8 +27,7 @@ function App() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          url: urlToCrawl,
-          llm_model: llmModel
+          url: urlToCrawl
         }),
       });
 
@@ -74,7 +71,7 @@ function App() {
           {result && <ResultViewer data={result} />}
 
           {result && (
-            <LLMAnalyzer crawlResult={result} selectedModel={activeModel} />
+            <LLMAnalyzer crawlResult={result} />
           )}
 
           {!isLoading && !result && !error && (
