@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import '../index.css';
 
-const LinkNode = ({ link, isSelected, onToggleSelect }) => {
+const LinkNodeRow = ({ link, isSelected, onToggleSelect }) => {
     // Generate badge class based on category
     const getBadgeClass = (category) => {
         if (category === 'File Download') return 'badge-file';
@@ -10,25 +10,31 @@ const LinkNode = ({ link, isSelected, onToggleSelect }) => {
     };
 
     return (
-        <div className="link-node">
-            <input
-                type="checkbox"
-                checked={isSelected}
-                onChange={() => onToggleSelect(link.href)}
-                className="link-checkbox"
-            />
-            <div className="link-details">
-                <a href={link.href} target="_blank" rel="noopener noreferrer" className="link-text" title={link.href}>
-                    {link.text || link.href}
+        <tr className="link-grid-row">
+            <td className="col-checkbox">
+                <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => onToggleSelect(link.href)}
+                    className="link-checkbox"
+                />
+            </td>
+            <td className="col-text" title={link.text || link.href}>
+                <div className="text-truncate">{link.text || link.href}</div>
+            </td>
+            <td className="col-url" title={link.href}>
+                <a href={link.href} target="_blank" rel="noopener noreferrer" className="url-truncate">
+                    {link.href}
                 </a>
-                <span className="link-url-hint">{link.href}</span>
-            </div>
-            {link.category !== 'Standard' && (
-                <span className={`link-badge ${getBadgeClass(link.category)}`}>
-                    {link.category === 'File Download' ? '⬇️ File' : '💬 Board'}
-                </span>
-            )}
-        </div>
+            </td>
+            <td className="col-badge">
+                {link.category !== 'Standard' && (
+                    <span className={`link-badge ${getBadgeClass(link.category)}`}>
+                        {link.category === 'File Download' ? '⬇️ File' : '💬 Board'}
+                    </span>
+                )}
+            </td>
+        </tr>
     );
 };
 
@@ -73,14 +79,26 @@ const LinkFolder = ({ title, links, selectedUrls, onToggleSelect, onSelectGroup 
 
             {isExpanded && (
                 <div className="link-folder-contents">
-                    {links.map((link, idx) => (
-                        <LinkNode
-                            key={`${link.href}-${idx}`}
-                            link={link}
-                            isSelected={selectedUrls.has(link.href)}
-                            onToggleSelect={onToggleSelect}
-                        />
-                    ))}
+                    <table className="link-grid-table">
+                        <thead>
+                            <tr>
+                                <th className="col-checkbox"></th>
+                                <th className="col-text">Link Text</th>
+                                <th className="col-url">URL Address</th>
+                                <th className="col-badge">Type</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {links.map((link, idx) => (
+                                <LinkNodeRow
+                                    key={`${link.href}-${idx}`}
+                                    link={link}
+                                    isSelected={selectedUrls.has(link.href)}
+                                    onToggleSelect={onToggleSelect}
+                                />
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
             )}
         </div>
@@ -108,6 +126,40 @@ const LinkTreeView = ({ data, selectedUrls, setSelectedUrls }) => {
         setSelectedUrls(newSelected);
     };
 
+    // Prepare CSV data
+    const handleExportCSV = () => {
+        const header = ["Category", "Link Text", "URL", "Internal/External"];
+        const rows = [];
+
+        const processLinks = (linkList, typeStr) => {
+            linkList.forEach(link => {
+                if (selectedUrls.has(link.href)) {
+                    rows.push([
+                        `"${link.category}"`,
+                        `"${(link.text || '').replace(/"/g, '""')}"`,
+                        `"${link.href}"`,
+                        `"${typeStr}"`
+                    ].join(','));
+                }
+            });
+        };
+
+        if (data.internal_links) processLinks(data.internal_links, "Internal");
+        if (data.external_links) processLinks(data.external_links, "External");
+
+        const csvContent = [header.join(','), ...rows].join('\n');
+
+        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `vcrawl_links_export_${Date.now()}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
     return (
         <div className="link-tree-wrapper">
             <div className="link-tree-controls">
@@ -119,6 +171,13 @@ const LinkTreeView = ({ data, selectedUrls, setSelectedUrls }) => {
                         disabled={selectedUrls.size === 0}
                     >
                         Clear Selection
+                    </button>
+                    <button
+                        className="btn-secondary"
+                        onClick={handleExportCSV}
+                        disabled={selectedUrls.size === 0}
+                    >
+                        Export CSV
                     </button>
                     {/* Placeholder for future features */}
                     <button className="btn-primary" disabled={selectedUrls.size === 0}>

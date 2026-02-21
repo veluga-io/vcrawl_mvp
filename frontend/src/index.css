@@ -770,3 +770,239 @@ body {
   max-height: 200px;
   overflow-y: auto;
 }
+
+/* -----------------------------------
+   Link Collector Grid View
+----------------------------------- */
+.link-tree-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.link-tree-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+}
+
+.link-tree-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn-secondary {
+  padding: 0.5rem 1rem;
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary:not(:disabled):hover {
+  background-color: var(--nav-hover-bg);
+}
+
+.btn-primary {
+  padding: 0.5rem 1rem;
+  background-color: var(--accent-color);
+  border: none;
+  color: #fff;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: bold;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary:not(:disabled):hover {
+  background-color: var(--accent-hover);
+}
+
+/* Folders */
+.link-tree-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.link-folder {
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background-color: var(--bg-secondary);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.link-folder-header {
+  display: flex;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background-color: rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  user-select: none;
+  gap: 1rem;
+}
+
+.link-folder-header:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.folder-toggle-icon {
+  font-size: 0.9rem;
+  width: 16px;
+  color: var(--text-secondary);
+  display: inline-flex;
+  justify-content: center;
+}
+
+.folder-title {
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+
+.folder-count {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  margin-left: auto;
+}
+
+.link-folder-contents {
+  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-primary);
+}
+
+/* Table Grid */
+.link-grid-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  table-layout: fixed;
+}
+
+.link-grid-table thead {
+  background-color: rgba(30, 41, 59, 0.8);
+  border-bottom: 2px solid var(--border-color);
+}
+
+.link-grid-table th {
+  padding: 0.75rem 1rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.link-grid-row {
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.15s;
+}
+
+.link-grid-row:last-child {
+  border-bottom: none;
+}
+
+.link-grid-row:hover {
+  background-color: rgba(59, 130, 246, 0.05);
+  /* very light blue hover */
+}
+
+/* Columns */
+.col-checkbox {
+  width: 50px;
+  text-align: center;
+  padding: 0.75rem 0;
+}
+
+.col-text {
+  width: 35%;
+  padding: 0.75rem 1rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.col-url {
+  width: 45%;
+  padding: 0.75rem 1rem;
+}
+
+.col-badge {
+  width: 15%;
+  padding: 0.75rem 1rem;
+}
+
+.text-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.url-truncate {
+  display: block;
+  /* Required for text-overflow to work on <a> */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-family: var(--font-family);
+  /* Or use monospace if preferred */
+}
+
+.url-truncate:hover {
+  color: var(--accent-color);
+  text-decoration: underline;
+}
+
+.link-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-color);
+  cursor: pointer;
+}
+
+/* Badges */
+.link-badge {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-file {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.badge-board {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badge-standard {
+  display: none;
+}
