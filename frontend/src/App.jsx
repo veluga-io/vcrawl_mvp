@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import SingleCrawlView from './components/SingleCrawlView';
+import LinkCollectorView from './components/LinkCollectorView';
 import PlaceholderView from './components/PlaceholderView';
 import LLMAnalyzerView from './components/LLMAnalyzerView';
 import './index.css';
@@ -13,12 +14,7 @@ function App() {
       case 'single_crawl':
         return <SingleCrawlView />;
       case 'link_collector':
-        return (
-          <PlaceholderView
-            title="Link Collector"
-            description="Collect all internal and external links from a target site and map out its structure."
-          />
-        );
+        return <LinkCollectorView />;
       case 'batch_crawl':
         return (
           <PlaceholderView

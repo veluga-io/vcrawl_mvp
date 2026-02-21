@@ -334,6 +334,94 @@ async def analyze(request: AnalyzeRequest):
     except Exception as e:
         return AnalyzeResponse(success=False, error_message=str(e))
 
+# ──────────────────────────────────────────────
+# Link Collector – Extract and categorize links
+# ──────────────────────────────────────────────
+
+class CollectLinksRequest(BaseModel):
+    url: str
+
+class LinkItem(BaseModel):
+    href: str
+    text: str
+    category: str  # 'Standard', 'File Download', 'Board/Forum'
+
+class CollectLinksResponse(BaseModel):
+    success: bool
+    internal_links: list[LinkItem] = []
+    external_links: list[LinkItem] = []
+    error_message: str = ""
+
+def categorize_link(url: str, text: str) -> str:
+    url_lower = url.lower()
+    text_lower = text.lower()
+    
+    # 1. Check for files
+    file_extensions = [
+        '.pdf', '.zip', '.rar', '.hwp', '.doc', '.docx', 
+        '.xls', '.xlsx', '.ppt', '.pptx', '.csv', 
+        '.png', '.jpg', '.jpeg', '.gif', '.mp3', '.mp4', '.avi'
+    ]
+    if any(url_lower.endswith(ext) or (ext + '?') in url_lower for ext in file_extensions):
+        return 'File Download'
+        
+    # 2. Check for boards/forums
+    board_keywords = ['board', 'forum', 'bbs', 'view', 'article', 'notice', 'list.do', 'view.do']
+    if any(kw in url_lower for kw in board_keywords) or any(kw in text_lower for kw in ['게시판', '공지사항', '자료실', '목록']):
+        return 'Board/Forum'
+        
+    return 'Standard'
+
+@app.post("/api/v1/collect-links", response_model=CollectLinksResponse)
+async def collect_links(request: CollectLinksRequest):
+    try:
+        url_to_crawl = request.url.strip()
+        if not url_to_crawl:
+            raise Exception("URL cannot be empty")
+
+        if not url_to_crawl.startswith(('http://', 'https://')):
+            url_to_crawl = 'https://' + url_to_crawl
+
+        async with AsyncWebCrawler(verbose=True) as crawler:
+            # We don't need markdown/HTML content as much, we just need links.
+            # But crawl4ai extracts them by default.
+            result = await crawler.arun(url=url_to_crawl)
+
+            if not result.success:
+                raise Exception(f"Crawl failed: {result.error_message}")
+
+            # Extract links dictionary
+            links_dict = result.links if hasattr(result, 'links') and result.links else {}
+            
+            internal = links_dict.get('internal', [])
+            external = links_dict.get('external', [])
+
+            internal_items = []
+            for link in internal:
+                href = link.get('href', '')
+                text = link.get('text', '').strip()
+                if not href: continue
+                category = categorize_link(href, text)
+                internal_items.append(LinkItem(href=href, text=text, category=category))
+
+            external_items = []
+            for link in external:
+                href = link.get('href', '')
+                text = link.get('text', '').strip()
+                if not href: continue
+                category = categorize_link(href, text)
+                external_items.append(LinkItem(href=href, text=text, category=category))
+
+            return CollectLinksResponse(
+                success=True,
+                internal_links=internal_items,
+                external_links=external_items
+            )
+    except Exception as e:
+        return CollectLinksResponse(
+            success=False,
+            error_message=str(e)
+        )
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)
