@@ -259,6 +259,27 @@ const LLMBatchView = () => {
         });
     };
 
+    const handleToggleAllRecoveryBatches = () => {
+        const completedBatches = recoveryBatches.filter(b => b.status === 'completed').map(b => b.batch_id);
+        const allSelected = completedBatches.length > 0 && completedBatches.every(id => selectedRecoveryBatches.has(id));
+
+        if (allSelected) {
+            // Deselect all completed
+            setSelectedRecoveryBatches(prev => {
+                const next = new Set(prev);
+                completedBatches.forEach(id => next.delete(id));
+                return next;
+            });
+        } else {
+            // Select all completed
+            setSelectedRecoveryBatches(prev => {
+                const next = new Set(prev);
+                completedBatches.forEach(id => next.add(id));
+                return next;
+            });
+        }
+    };
+
     const handleDownloadRecoveryResults = async () => {
         if (selectedRecoveryBatches.size === 0) {
             setError("No batches selected.");
@@ -499,7 +520,17 @@ const LLMBatchView = () => {
                                 <table className="batch-link-table">
                                     <thead>
                                         <tr>
-                                            <th>Select</th>
+                                            <th>
+                                                <input
+                                                    type="checkbox"
+                                                    onChange={handleToggleAllRecoveryBatches}
+                                                    checked={
+                                                        recoveryBatches.filter(b => b.status === 'completed').length > 0 &&
+                                                        recoveryBatches.filter(b => b.status === 'completed').every(b => selectedRecoveryBatches.has(b.batch_id))
+                                                    }
+                                                    title="Select All Completed"
+                                                />
+                                            </th>
                                             <th>Batch ID</th>
                                             <th>Status</th>
                                             <th>Created (UTC)</th>
