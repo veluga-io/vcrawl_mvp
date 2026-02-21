@@ -680,7 +680,9 @@ async def batch_convert(request: LLMBatchConvertRequest):
         files_info = []
         for idx, file_path in enumerate(md_files, start=1):
             content = file_path.read_text(encoding="utf-8")
-            custom_id = f"file_{idx:04d}_{file_path.stem}"
+            # Use only the original stem as custom_id (no extra numeric prefix).
+            # Windows filenames cannot contain : < > " / \ | ? * so sanitize later at result stage.
+            custom_id = file_path.stem
 
             # API Format Change: the new models do NOT support 'system' roles directly
             # For gpt-5 family, we combine system instruction into user content like Litellm patch does.
@@ -826,19 +828,22 @@ async def batch_results(request: LLMBatchResultsRequest):
                     except (KeyError, IndexError, TypeError):
                         llm_text = "ERROR: Failed to parse LLM response from batch result."
                     
-                    # Original filename logic
-                    # custom_id format is typically "file_0001_filename"
-                    # We'll just use the custom_id as base filename if possible
-                    base_filename = custom_id
-                    if base_filename.startswith("file_"):
-                        # strip the "file_" prefix
-                        base_filename = base_filename[5:]
-                    
-                    if "[STATUS: REJECTED]" in llm_text:
+                    # Filename logic
+                    # custom_id is the original file stem (e.g. "0001_pagename")
+                    # Sanitize any Windows-illegal characters just in case
+                    MAX_BASE_LEN = 180  # leave room for suffix + .md
+                    REJECTED_SUFFIX = " [REJECTED]"
+                    base_filename = re.sub(r'[<>:"\\|?*]', '_', custom_id)
+
+                    is_rejected = "[STATUS: REJECTED]" in llm_text
+
+                    if is_rejected:
                         rejected_count += 1
-                        out_file = output_dir / f"{base_filename} [STATUS: REJECTED].md"
+                        # Trim base so total stays within OS limit
+                        trimmed = base_filename[:MAX_BASE_LEN]
+                        out_file = output_dir / f"{trimmed}{REJECTED_SUFFIX}.md"
                     else:
-                        out_file = output_dir / f"{base_filename}.md"
+                        out_file = output_dir / f"{base_filename[:MAX_BASE_LEN + len(REJECTED_SUFFIX)]}.md"
                     
                     out_file.write_text(llm_text, encoding="utf-8")
                     total_files += 1
