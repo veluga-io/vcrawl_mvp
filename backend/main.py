@@ -677,15 +677,23 @@ async def batch_convert(request: LLMBatchConvertRequest):
         output_dir = folder_path.parent / f"{folder_path.name}_jsonl"
         output_dir.mkdir(parents=True, exist_ok=True)
 
+        # OpenAI Limits
+        MAX_REQUESTS_PER_FILE = 50000
+        # Target 500MB max per file to be safely under 512MB
+        MAX_BYTES_PER_FILE = 500 * 1024 * 1024 
+
+        current_file_index = 1
+        current_request_count = 0
+        current_file_bytes = 0
+        
+        out_file = output_dir / f"batch_{current_file_index:03d}.jsonl"
+        f_out = open(out_file, "w", encoding="utf-8")
+
         files_info = []
-        for idx, file_path in enumerate(md_files, start=1):
+        for file_path in md_files:
             content = file_path.read_text(encoding="utf-8")
-            # Use only the original stem as custom_id (no extra numeric prefix).
-            # Windows filenames cannot contain : < > " / \ | ? * so sanitize later at result stage.
             custom_id = file_path.stem
 
-            # API Format Change: the new models do NOT support 'system' roles directly
-            # For gpt-5 family, we combine system instruction into user content like Litellm patch does.
             if "gpt-5" in request.model:
                 messages = [{"role": "user", "content": f"System Instruction:\n{request.instruction}\n\nUser Content:\n{content}"}]
                 body = {
@@ -710,13 +718,32 @@ async def batch_convert(request: LLMBatchConvertRequest):
                 "body": body
             }
 
-            out_file = output_dir / f"{custom_id}.jsonl"
-            with open(out_file, "w", encoding="utf-8") as f:
-                f.write(json.dumps(jsonl_entry, ensure_ascii=False) + "\n")
-            
-            files_info.append({"custom_id": custom_id, "file_path": str(out_file)})
+            line = json.dumps(jsonl_entry, ensure_ascii=False) + "\n"
+            line_bytes = len(line.encode("utf-8"))
 
-        return {"success": True, "output_folder": str(output_dir), "file_count": len(files_info), "files": files_info}
+            # Check if adding this prevents exceeding limits
+            if current_request_count >= MAX_REQUESTS_PER_FILE or (current_file_bytes + line_bytes) > MAX_BYTES_PER_FILE:
+                f_out.close()
+                current_file_index += 1
+                out_file = output_dir / f"batch_{current_file_index:03d}.jsonl"
+                f_out = open(out_file, "w", encoding="utf-8")
+                
+                current_request_count = 0
+                current_file_bytes = 0
+
+            f_out.write(line)
+            current_request_count += 1
+            current_file_bytes += line_bytes
+            files_info.append({"custom_id": custom_id, "batch_file": out_file.name})
+
+        f_out.close()
+
+        return {
+            "success": True, 
+            "output_folder": str(output_dir), 
+            "file_count": len(files_info),
+            "batch_files_created": current_file_index 
+        }
     except Exception as e:
         return {"success": False, "error_message": str(e)}
 
@@ -776,6 +803,36 @@ async def batch_status(request: LLMBatchStatusRequest):
                 "completed": batch_job.request_counts.completed if batch_job.request_counts else 0,
                 "failed": batch_job.request_counts.failed if batch_job.request_counts else 0,
                 "total": batch_job.request_counts.total if batch_job.request_counts else 0,
+                "output_file_id": batch_job.output_file_id,
+                "error_file_id": batch_job.error_file_id
+            })
+
+        return {"success": True, "batches": batches_info}
+    except Exception as e:
+        return {"success": False, "error_message": str(e)}
+
+class LLMBatchListRequest(BaseModel):
+    limit: int = 30
+
+@app.post("/api/v1/llm-batch/list")
+async def batch_list(request: LLMBatchListRequest):
+    try:
+        import openai
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise Exception("OPENAI_API_KEY is not set.")
+        client = openai.OpenAI(api_key=api_key)
+
+        batch_jobs = client.batches.list(limit=request.limit)
+        batches_info = []
+        for batch_job in batch_jobs.data:
+            batches_info.append({
+                "batch_id": batch_job.id,
+                "status": batch_job.status,
+                "completed": batch_job.request_counts.completed if batch_job.request_counts else 0,
+                "failed": batch_job.request_counts.failed if batch_job.request_counts else 0,
+                "total": batch_job.request_counts.total if batch_job.request_counts else 0,
+                "created_at": batch_job.created_at,
                 "output_file_id": batch_job.output_file_id,
                 "error_file_id": batch_job.error_file_id
             })

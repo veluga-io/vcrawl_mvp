@@ -71,6 +71,12 @@ const LLMBatchView = () => {
     // Step 4: Results
     const [resultsFolderPath, setResultsFolderPath] = useState('');
 
+    // Step 5: Recover Past Batches
+    const [recoveryBatches, setRecoveryBatches] = useState([]);
+    const [selectedRecoveryBatches, setSelectedRecoveryBatches] = useState(new Set());
+    const [recoveryFolderPath, setRecoveryFolderPath] = useState('');
+    const [recoveryLimit, setRecoveryLimit] = useState(30);
+
     // Auto-fill JSONL path when conversion succeeds
     useEffect(() => {
         if (convertedJsonlPath) {
@@ -216,6 +222,76 @@ const LLMBatchView = () => {
         }
     };
 
+    // Step 5 functions
+    const fetchRecoveryBatches = async () => {
+        setIsLoading(true);
+        setError(null);
+        setSuccessMessage(null);
+        try {
+            const res = await fetch('/api/v1/llm-batch/list', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ limit: recoveryLimit })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setRecoveryBatches(data.batches);
+                setSuccessMessage(`Fetched ${data.batches.length} past batches.`);
+            } else {
+                setError(data.error_message || 'Failed to fetch batches.');
+            }
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleToggleRecoveryBatch = (batchId) => {
+        setSelectedRecoveryBatches(prev => {
+            const next = new Set(prev);
+            if (next.has(batchId)) {
+                next.delete(batchId);
+            } else {
+                next.add(batchId);
+            }
+            return next;
+        });
+    };
+
+    const handleDownloadRecoveryResults = async () => {
+        if (selectedRecoveryBatches.size === 0) {
+            setError("No batches selected.");
+            return;
+        }
+
+        setIsLoading(true);
+        setError(null);
+        setSuccessMessage(null);
+
+        try {
+            const res = await fetch('/api/v1/llm-batch/results', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    batch_ids: Array.from(selectedRecoveryBatches),
+                    output_folder_path: recoveryFolderPath
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setResultsFolderPath(data.output_folder);
+                setSuccessMessage(`Recovery Download Successful! Total files: ${data.total_files}. Rejected files: ${data.rejected_count}.\nSaved to: ${data.output_folder}`);
+            } else {
+                setError(data.error_message || 'Failed to download recovered results.');
+            }
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="view-container llm-batch-view">
             <header className="view-header">
@@ -226,7 +302,7 @@ const LLMBatchView = () => {
             </header>
 
             <div className="llm-batch-steps">
-                {[1, 2, 3, 4].map(s => (
+                {[1, 2, 3, 4, 5].map(s => (
                     <button
                         key={s}
                         className={`step-btn ${step === s ? 'active' : ''} ${step > s ? 'completed' : ''}`}
@@ -378,6 +454,87 @@ const LLMBatchView = () => {
                             </div>
                         ) : (
                             <p className="text-secondary">Results have not been downloaded yet.</p>
+                        )}
+                    </div>
+                )}
+
+                {/* STEP 5: RECOVER PAST BATCHES */}
+                {step === 5 && (
+                    <div className="batch-card fade-in">
+                        <h2>Step 5: Recover Past Batches</h2>
+                        <p className="text-secondary">
+                            Fetch and download results from previously submitted batch jobs, even if you closed the browser.
+                        </p>
+
+                        <div className="form-group row" style={{ alignItems: 'flex-end', marginTop: '1rem' }}>
+                            <div className="form-group flex-1" style={{ marginBottom: 0 }}>
+                                <label>Fetch Limit</label>
+                                <input
+                                    type="number"
+                                    className="search-input"
+                                    value={recoveryLimit}
+                                    onChange={e => setRecoveryLimit(Number(e.target.value))}
+                                    min={1}
+                                    max={100}
+                                />
+                            </div>
+                            <button className="secondary-btn" onClick={fetchRecoveryBatches} disabled={isLoading} style={{ marginLeft: '1rem' }}>
+                                Fetch Recent Batches
+                            </button>
+                        </div>
+
+                        {recoveryBatches.length > 0 && (
+                            <div className="batch-table-container mt-4">
+                                <table className="batch-link-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Select</th>
+                                            <th>Batch ID</th>
+                                            <th>Status</th>
+                                            <th>Created (UTC)</th>
+                                            <th>Completed</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {recoveryBatches.map(b => (
+                                            <tr key={b.batch_id}>
+                                                <td>
+                                                    <input
+                                                        type="checkbox"
+                                                        disabled={b.status !== 'completed'}
+                                                        checked={selectedRecoveryBatches.has(b.batch_id)}
+                                                        onChange={() => handleToggleRecoveryBatch(b.batch_id)}
+                                                    />
+                                                </td>
+                                                <td className="code-font">{b.batch_id}</td>
+                                                <td><span className={`status-badge ${b.status}`}>{b.status}</span></td>
+                                                <td>{new Date(b.created_at * 1000).toLocaleString()}</td>
+                                                <td>{b.completed}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+
+                                <div className="form-group mt-4">
+                                    <label>Output Folder Path (Optional)</label>
+                                    <input
+                                        className="search-input"
+                                        type="text"
+                                        value={recoveryFolderPath}
+                                        onChange={e => setRecoveryFolderPath(e.target.value)}
+                                        placeholder="Leave empty for default directory"
+                                    />
+                                </div>
+                                <div className="action-row">
+                                    <button
+                                        className="primary-btn"
+                                        onClick={handleDownloadRecoveryResults}
+                                        disabled={isLoading || selectedRecoveryBatches.size === 0}
+                                    >
+                                        {isLoading ? <LoadingSpinner small /> : 'Download Selected Results'}
+                                    </button>
+                                </div>
+                            </div>
                         )}
                     </div>
                 )}

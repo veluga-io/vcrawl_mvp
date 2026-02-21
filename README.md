@@ -31,10 +31,11 @@ A powerful web scraping testing tool built with FastAPI and React, designed to a
   - Real-time per-link progress tracking with SSE streaming
   - Auto-creates timestamped output folder (`vcrawl_batch_YYYYMMDD_HHMMSS/`)
 - **LLM Batch**: High-volume, cost-effective LLM processing using OpenAI Batch API:
-  - Convert folder of `.md` files to `.jsonl` with custom system prompts
+  - Convert folder of `.md` files to consolidated, chunked `.jsonl` files automatically complying with OpenAI API limits (50k requests / 500MB).
   - Select from lightweight reasoning models (`gpt-5-mini`, `gpt-5-nano`)
   - Submit batches, monitor status, and download results natively
   - Automatically renames files with `[STATUS: REJECTED]` based on prompt dropping rules
+  - **Native Batch Recovery (Step 5)**: Query OpenAI for previously completed jobs from past sessions to cleanly download merged `.md` files even after closing the browser.
 - **Premium Dark UI**: Modern, responsive interface with smooth animations
 
 ## 📋 Prerequisites
