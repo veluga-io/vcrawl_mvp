@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import SearchBar from './SearchBar';
 import LoadingSpinner from './LoadingSpinner';
 import LinkTreeView from './LinkTreeView';
@@ -9,41 +9,79 @@ const LinkCollectorView = () => {
     const [error, setError] = useState(null);
     const [selectedUrls, setSelectedUrls] = useState(new Set());
     const [depth, setDepth] = useState(0);
+    const [logs, setLogs] = useState([]);
+    const [crawledUrl, setCrawledUrl] = useState('');
+
+    const logEndRef = useRef(null);
+
+    // Auto-scroll log panel to bottom when new logs arrive
+    useEffect(() => {
+        if (logEndRef.current) {
+            logEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [logs]);
 
     const handleCollect = async (url) => {
         setIsLoading(true);
         setError(null);
         setResult(null);
-        setSelectedUrls(new Set()); // Reset selections on new crawl
+        setSelectedUrls(new Set());
+        setLogs([]);
 
         let urlToCrawl = url.trim();
         if (!/^https?:\/\//i.test(urlToCrawl)) {
             urlToCrawl = 'https://' + urlToCrawl;
         }
+        setCrawledUrl(urlToCrawl);
 
         try {
             const response = await fetch('/api/v1/collect-links', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    url: urlToCrawl,
-                    depth: depth,
-                    max_urls: 1400
-                }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: urlToCrawl, depth, max_urls: 1400 }),
             });
 
-            const data = await response.json();
+            if (!response.ok || !response.body) {
+                throw new Error(`Server error: ${response.status}`);
+            }
 
-            if (data.success) {
-                setResult(data);
-            } else {
-                setError(data.error_message || 'Failed to collect links');
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n\n');
+                buffer = lines.pop(); // keep incomplete last chunk
+
+                for (const chunk of lines) {
+                    const dataLine = chunk.split('\n').find(l => l.startsWith('data: '));
+                    if (!dataLine) continue;
+                    try {
+                        const event = JSON.parse(dataLine.slice(6));
+                        if (event.type === 'log') {
+                            setLogs(prev => [...prev, event.message]);
+                        } else if (event.type === 'done') {
+                            setResult({
+                                success: true,
+                                internal_links: event.internal_links,
+                                external_links: event.external_links,
+                            });
+                            setIsLoading(false);
+                        } else if (event.type === 'error') {
+                            setError(event.message);
+                            setIsLoading(false);
+                        }
+                    } catch {
+                        // skip malformed chunks
+                    }
+                }
             }
         } catch (err) {
-            setError('Network error occurred. Please try again.');
-        } finally {
+            setError(err.message || 'Network error occurred. Please try again.');
             setIsLoading(false);
         }
     };
@@ -84,22 +122,41 @@ const LinkCollectorView = () => {
                 />
 
                 {error && (
-                    <div className="error-message">
-                        {error}
+                    <div className="error-message">{error}</div>
+                )}
+
+                {/* Live log panel — visible while loading OR after completion if logs exist */}
+                {logs.length > 0 && (
+                    <div className="log-panel">
+                        <div className="log-panel-header">
+                            <span className="log-panel-title">
+                                {isLoading ? (
+                                    <><span className="log-pulse" />Live Progress</>
+                                ) : '✅ Crawl Log'}
+                            </span>
+                            <span className="log-panel-count">{logs.length} events</span>
+                        </div>
+                        <div className="log-panel-body">
+                            {logs.map((line, i) => (
+                                <div key={i} className="log-line">{line}</div>
+                            ))}
+                            <div ref={logEndRef} />
+                        </div>
                     </div>
                 )}
 
-                {isLoading && <LoadingSpinner />}
+                {isLoading && logs.length === 0 && <LoadingSpinner />}
 
                 {result && (
                     <LinkTreeView
                         data={result}
                         selectedUrls={selectedUrls}
                         setSelectedUrls={setSelectedUrls}
+                        seedUrl={crawledUrl}
                     />
                 )}
 
-                {!isLoading && !result && !error && (
+                {!isLoading && !result && !error && logs.length === 0 && (
                     <div className="empty-state">
                         <p>Enter a URL above to start collecting links</p>
                     </div>

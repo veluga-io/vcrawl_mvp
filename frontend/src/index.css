@@ -1060,3 +1060,245 @@ body {
 .badge-standard {
   display: none;
 }
+
+/* ── Live Log Panel ─────────────────────────────────────── */
+.log-panel {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #0a0f1a;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.log-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1rem;
+  background: rgba(30, 41, 59, 0.6);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.log-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.log-panel-count {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+.log-panel-body {
+  padding: 0.75rem 1rem;
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  scroll-behavior: smooth;
+}
+
+.log-line {
+  font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 0.82rem;
+  color: #94a3b8;
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: 1.6;
+  padding: 0.1rem 0;
+}
+
+.log-line:last-of-type {
+  color: #cbd5e1;
+}
+
+/* Pulsing dot for "Live" indicator */
+.log-pulse {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 6px #22c55e;
+  animation: pulseDot 1.2s ease-in-out infinite;
+}
+
+@keyframes pulseDot {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.5;
+    transform: scale(0.75);
+  }
+}
+
+/* ── View Mode Toggle ───────────────────────────────────── */
+.view-mode-toggle {
+  display: flex;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.view-mode-btn {
+  padding: 0.4rem 0.85rem;
+  font-size: 0.82rem;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.view-mode-btn:first-child {
+  border-right: 1px solid var(--border-color);
+}
+
+.view-mode-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.view-mode-btn.active {
+  background: var(--accent-color);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ── Sitemap Section Header ──────────────────────────────── */
+.sitemap-section-header {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  padding: 0.5rem 0;
+}
+
+/* ── Sitemap Tree ────────────────────────────────────────── */
+.sitemap-tree {
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: var(--bg-secondary);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.sitemap-empty {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 3rem 1rem;
+  font-size: 0.95rem;
+}
+
+.sitemap-node {
+  border-bottom: 1px solid rgba(51, 65, 85, 0.4);
+}
+
+.sitemap-node:last-child {
+  border-bottom: none;
+}
+
+.sitemap-node-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  transition: background-color 0.15s;
+  min-height: 36px;
+}
+
+.sitemap-node-row:hover {
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+.sitemap-toggle-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.7rem;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  flex-shrink: 0;
+  padding: 0;
+  transition: all 0.15s;
+}
+
+.sitemap-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.sitemap-leaf-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  font-size: 0.7rem;
+  color: rgba(148, 163, 184, 0.35);
+  flex-shrink: 0;
+}
+
+.sitemap-folder-icon,
+.sitemap-page-icon {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.sitemap-url {
+  font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 0.82rem;
+  color: #93c5fd;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 420px;
+  transition: color 0.15s;
+}
+
+.sitemap-url:hover {
+  color: #bfdbfe;
+  text-decoration: underline;
+}
+
+.sitemap-text {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 250px;
+  opacity: 0.7;
+}
+
+.sitemap-child-count {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  opacity: 0.5;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.sitemap-children {
+  border-left: 1px solid rgba(59, 130, 246, 0.15);
+  margin-left: 1.25rem;
+}

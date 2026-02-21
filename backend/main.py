@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from crawl4ai import AsyncWebCrawler
 import uvicorn
@@ -347,6 +348,8 @@ class LinkItem(BaseModel):
     href: str
     text: str
     category: str  # 'Standard', 'File Download', 'Board/Forum'
+    parent_url: str = ""
+    depth: int = 0
 
 class CollectLinksResponse(BaseModel):
     success: bool
@@ -374,105 +377,125 @@ def categorize_link(url: str, text: str) -> str:
         
     return 'Standard'
 
-@app.post("/api/v1/collect-links", response_model=CollectLinksResponse)
-async def collect_links(request: CollectLinksRequest):
+async def _collect_links_generator(request: CollectLinksRequest):
+    """Async generator that yields SSE-formatted JSON events during link collection."""
     import urllib.parse
+    import json
+
+    def sse(data: dict) -> str:
+        return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
     try:
         url_to_crawl = request.url.strip()
         if not url_to_crawl:
-            raise Exception("URL cannot be empty")
+            yield sse({"type": "error", "message": "URL cannot be empty"})
+            return
 
         if not url_to_crawl.startswith(('http://', 'https://')):
             url_to_crawl = 'https://' + url_to_crawl
-            
+
         parsed_seed = urllib.parse.urlparse(url_to_crawl)
         base_domain = parsed_seed.netloc
-        
-        target_depth = max(0, min(request.depth, 3)) # Cap depth to 3 for safety
-        max_urls = max(1, min(request.max_urls, 2000)) # Cap max URLs to 2000
-        
-        all_internal_items = {} # dict of href -> LinkItem to easily dedup
-        all_external_items = {} 
 
-        async with AsyncWebCrawler(verbose=True) as crawler:
+        target_depth = max(0, min(request.depth, 3))
+        max_urls = max(1, min(request.max_urls, 2000))
+
+        all_internal_items = {}
+        all_external_items = {}
+
+        yield sse({"type": "log", "message": f"🚀 Starting crawl: {url_to_crawl}"})
+        yield sse({"type": "log", "message": f"📋 Depth: {target_depth}  |  Max URLs: {max_urls}"})
+
+        async with AsyncWebCrawler(verbose=False) as crawler:
             visited_urls = set()
             current_level_urls = [url_to_crawl]
-            
+
             for current_d in range(target_depth + 1):
                 if not current_level_urls:
                     break
-                    
-                print(f"[DEBUG] Scraping depth {current_d} with {len(current_level_urls)} URLs.")
-                
-                # Fetch current level
-                # Force arun_many if list is larger than 1, otherwise just arun
+
+                yield sse({"type": "log", "message": f"🔍 Depth {current_d}: fetching {len(current_level_urls)} URL(s)…"})
+
                 if len(current_level_urls) == 1:
                     results = [await crawler.arun(url=current_level_urls[0])]
                 else:
                     results = await crawler.arun_many(urls=current_level_urls)
-                    
+
                 visited_urls.update(current_level_urls)
                 next_level_urls = set()
-                
+                success_count = 0
+                fail_count = 0
+
                 for res in results:
                     if not res.success:
+                        fail_count += 1
+                        yield sse({"type": "log", "message": f"  ⚠️  Failed: {getattr(res, 'url', '?')}"})
                         continue
-                        
+
+                    success_count += 1
                     links_dict = res.links if hasattr(res, 'links') and res.links else {}
                     internal = links_dict.get('internal', [])
                     external = links_dict.get('external', [])
-                    
-                    # Process internals
+
+                    new_internal = 0
                     for link in internal:
                         href = link.get('href', '')
                         text = link.get('text', '').strip()
-                        if not href: continue
-                        
-                        # Dedup and aggregate
+                        if not href:
+                            continue
                         if href not in all_internal_items:
                             category = categorize_link(href, text)
-                            all_internal_items[href] = LinkItem(href=href, text=text, category=category)
-                            
-                        # Queue for next depth if within domain restrictions
+                            all_internal_items[href] = LinkItem(href=href, text=text, category=category, parent_url=getattr(res, 'url', ''), depth=current_d)
+                            new_internal += 1
                         if current_d < target_depth:
                             try:
                                 parsed_href = urllib.parse.urlparse(href)
-                                # Must exactly match base domain. 
-                                # In strict implementations you might allow subdomains, but keeping it simple here.
                                 if parsed_href.netloc == base_domain or not parsed_href.netloc:
                                     if href not in visited_urls:
                                         next_level_urls.add(href)
                             except Exception:
-                                pass # ignore bad URLs for queueing
+                                pass
 
-                    # Process externals
                     for link in external:
                         href = link.get('href', '')
                         text = link.get('text', '').strip()
-                        if not href: continue
-                        
+                        if not href:
+                            continue
                         if href not in all_external_items:
                             category = categorize_link(href, text)
-                            all_external_items[href] = LinkItem(href=href, text=text, category=category)
-                            
-                # Enforce limits for next level
+                            all_external_items[href] = LinkItem(href=href, text=text, category=category, parent_url=getattr(res, 'url', ''), depth=current_d)
+
+                    yield sse({"type": "log", "message": f"  ✅ {getattr(res, 'url', '?')} → +{new_internal} internal links"})
+
+                yield sse({"type": "log", "message": f"📊 Depth {current_d} done — ✅ {success_count} ok, ⚠️ {fail_count} failed. Total internal: {len(all_internal_items)}, external: {len(all_external_items)}"})
+
                 current_level_urls = list(next_level_urls)
                 if len(visited_urls) + len(current_level_urls) > max_urls:
-                    print(f"[DEBUG] Hit max_urls limit ({max_urls}). Truncating queue.")
                     remaining_allowance = max_urls - len(visited_urls)
                     current_level_urls = current_level_urls[:max(0, remaining_allowance)]
+                    yield sse({"type": "log", "message": f"⚡ Max URL limit ({max_urls}) reached. Truncating queue to {len(current_level_urls)}."})
 
-            return CollectLinksResponse(
-                success=True,
-                internal_links=list(all_internal_items.values()),
-                external_links=list(all_external_items.values())
-            )
-            
+        yield sse({"type": "log", "message": f"🏁 Crawl complete! Found {len(all_internal_items)} internal and {len(all_external_items)} external links."})
+        yield sse({
+            "type": "done",
+            "internal_links": [item.model_dump() for item in all_internal_items.values()],
+            "external_links": [item.model_dump() for item in all_external_items.values()],
+        })
+
     except Exception as e:
-        return CollectLinksResponse(
-            success=False,
-            error_message=str(e)
-        )
+        yield sse({"type": "error", "message": str(e)})
+
+
+@app.post("/api/v1/collect-links")
+async def collect_links(request: CollectLinksRequest):
+    return StreamingResponse(
+        _collect_links_generator(request),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)

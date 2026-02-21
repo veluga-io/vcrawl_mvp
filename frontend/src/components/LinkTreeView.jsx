@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import SitemapTreeView from './SitemapTreeView';
 import '../index.css';
 
 const LinkNodeRow = ({ link, isSelected, onToggleSelect }) => {
@@ -105,7 +106,8 @@ const LinkFolder = ({ title, links, selectedUrls, onToggleSelect, onSelectGroup 
     );
 };
 
-const LinkTreeView = ({ data, selectedUrls, setSelectedUrls }) => {
+const LinkTreeView = ({ data, selectedUrls, setSelectedUrls, seedUrl }) => {
+    const [viewMode, setViewMode] = useState('list'); // 'list' | 'sitemap'
 
     const toggleSelect = (url) => {
         const newSelected = new Set(selectedUrls);
@@ -125,6 +127,10 @@ const LinkTreeView = ({ data, selectedUrls, setSelectedUrls }) => {
         });
         setSelectedUrls(newSelected);
     };
+
+    // Check if any links have parent_url data (depth > 0 crawl)
+    const hasHierarchyData = [...(data.internal_links || []), ...(data.external_links || [])]
+        .some(l => l.parent_url && l.parent_url !== '');
 
     // Prepare CSV data
     const handleExportCSV = () => {
@@ -165,6 +171,24 @@ const LinkTreeView = ({ data, selectedUrls, setSelectedUrls }) => {
             <div className="link-tree-controls">
                 <span>Selected: <strong>{selectedUrls.size}</strong> links</span>
                 <div className="link-tree-actions">
+                    {/* View Mode Toggle */}
+                    {hasHierarchyData && (
+                        <div className="view-mode-toggle">
+                            <button
+                                className={`view-mode-btn ${viewMode === 'list' ? 'active' : ''}`}
+                                onClick={() => setViewMode('list')}
+                            >
+                                📋 List
+                            </button>
+                            <button
+                                className={`view-mode-btn ${viewMode === 'sitemap' ? 'active' : ''}`}
+                                onClick={() => setViewMode('sitemap')}
+                            >
+                                🗺️ Sitemap
+                            </button>
+                        </div>
+                    )}
+
                     <button
                         className="btn-secondary"
                         onClick={() => setSelectedUrls(new Set())}
@@ -179,7 +203,6 @@ const LinkTreeView = ({ data, selectedUrls, setSelectedUrls }) => {
                     >
                         Export CSV
                     </button>
-                    {/* Placeholder for future features */}
                     <button className="btn-primary" disabled={selectedUrls.size === 0}>
                         Send to Batch Crawl
                     </button>
@@ -187,21 +210,47 @@ const LinkTreeView = ({ data, selectedUrls, setSelectedUrls }) => {
             </div>
 
             <div className="link-tree-container">
-                <LinkFolder
-                    title="Internal Links"
-                    links={data.internal_links || []}
-                    selectedUrls={selectedUrls}
-                    onToggleSelect={toggleSelect}
-                    onSelectGroup={selectGroup}
-                />
-
-                <LinkFolder
-                    title="External Links"
-                    links={data.external_links || []}
-                    selectedUrls={selectedUrls}
-                    onToggleSelect={toggleSelect}
-                    onSelectGroup={selectGroup}
-                />
+                {viewMode === 'list' ? (
+                    <>
+                        <LinkFolder
+                            title="Internal Links"
+                            links={data.internal_links || []}
+                            selectedUrls={selectedUrls}
+                            onToggleSelect={toggleSelect}
+                            onSelectGroup={selectGroup}
+                        />
+                        <LinkFolder
+                            title="External Links"
+                            links={data.external_links || []}
+                            selectedUrls={selectedUrls}
+                            onToggleSelect={toggleSelect}
+                            onSelectGroup={selectGroup}
+                        />
+                    </>
+                ) : (
+                    <>
+                        <div className="sitemap-section-header">🔗 Internal Links — Sitemap View</div>
+                        <SitemapTreeView
+                            links={data.internal_links || []}
+                            seedUrl={seedUrl || ''}
+                            selectedUrls={selectedUrls}
+                            onToggleSelect={toggleSelect}
+                            onSelectSubtree={selectGroup}
+                        />
+                        {(data.external_links || []).length > 0 && (
+                            <>
+                                <div className="sitemap-section-header">🌐 External Links</div>
+                                <LinkFolder
+                                    title="External Links"
+                                    links={data.external_links || []}
+                                    selectedUrls={selectedUrls}
+                                    onToggleSelect={toggleSelect}
+                                    onSelectGroup={selectGroup}
+                                />
+                            </>
+                        )}
+                    </>
+                )}
             </div>
         </div>
     );

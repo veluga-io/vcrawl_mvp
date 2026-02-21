@@ -16,9 +16,12 @@ A powerful web scraping testing tool built with FastAPI and React, designed to a
   - Full page Markdown
   - Full page HTML
 - **Page Structure Analysis**: Identifies headers, navigation, main content, footers, and ads
-- **Real-time Crawling**: Live feedback with loading states
-- **Network Idle Detection**: Waits for dynamic content to fully load
-- **Auto-protocol Addition**: Automatically adds `https://` if missing from URLs
+- **LLM Analyzer**: Analyze crawled content using LLM models (Gemini, OpenAI)
+- **Link Collector**: Multi-depth link discovery with:
+  - **Live Log Streaming (SSE)**: Real-time crawl progress displayed in the UI
+  - **Sitemap Tree View**: Hierarchical parent→child URL visualization
+  - **Flat List View**: Traditional sortable table with category badges
+  - CSV export and batch crawl integration
 - **Premium Dark UI**: Modern, responsive interface with smooth animations
 
 ## 📋 Prerequisites
@@ -77,21 +80,29 @@ The application will be available at `http://localhost:5173`
 ```
 Vcrawl_mvp/
 ├── backend/
-│   ├── main.py              # FastAPI application
+│   ├── main.py              # FastAPI application (SSE streaming)
 │   ├── requirements.txt     # Python dependencies
-│   └── Dockerfile          # Backend Docker configuration
+│   ├── .env                 # API keys (GEMINI, OPENAI)
+│   └── Dockerfile           # Backend Docker configuration
 ├── frontend/
 │   ├── src/
-│   │   ├── components/     # React components
+│   │   ├── components/
 │   │   │   ├── SearchBar.jsx
 │   │   │   ├── ResultViewer.jsx
-│   │   │   └── LoadingSpinner.jsx
-│   │   ├── App.jsx         # Main application
+│   │   │   ├── LoadingSpinner.jsx
+│   │   │   ├── SingleCrawlView.jsx
+│   │   │   ├── LinkCollectorView.jsx  # SSE stream consumer
+│   │   │   ├── LinkTreeView.jsx       # List/Sitemap toggle
+│   │   │   ├── SitemapTreeView.jsx    # Hierarchical tree view
+│   │   │   ├── LLMAnalyzer.jsx
+│   │   │   └── LLMAnalyzerView.jsx
+│   │   ├── App.jsx         # Main application + sidebar
 │   │   └── index.css       # Styling
-│   ├── package.json        # npm dependencies
-│   └── Dockerfile          # Frontend Docker configuration
-├── docker-compose.yml      # Docker Compose configuration
-└── README.md              # This file
+│   ├── package.json
+│   ├── nginx.conf          # Nginx proxy config
+│   └── Dockerfile
+├── docker-compose.yml
+└── README.md
 ```
 
 ## 🔧 API Endpoints
@@ -132,7 +143,14 @@ Crawl and analyze a website.
 
 ## 🎨 UI Features
 
-### Tabs
+### Dashboard Views
+
+1. **Single Crawl** — Crawl a single URL, view results in multiple formats
+2. **Link Collector** — Multi-depth link discovery with live streaming logs and sitemap view
+3. **Batch Crawl** — *(planned)* Batch process multiple URLs
+4. **LLM Analyzer** — Analyze crawled content with Gemini or OpenAI models
+
+### Single Crawl Tabs
 
 1. **Content (MD)** - Main content in Markdown format (default)
 2. **Content (HTML)** - Main content in HTML format
@@ -140,10 +158,12 @@ Crawl and analyze a website.
 4. **Full HTML** - Complete page in HTML
 5. **Structure** - Page structure analysis
 
-### Actions
+### Link Collector Features
 
-- **Copy Content**: Copy the current tab's content to clipboard
-- **URL Display**: Shows the crawled URL
+- **Live Log Panel**: SSE-streamed crawl progress with pulsing green indicator
+- **📋 List / 🗺️ Sitemap Toggle**: Switch between flat table and hierarchical tree
+- **Depth Control**: 0–3 levels of crawl depth
+- **CSV Export**: Export selected links
 
 ## 🐳 Docker Deployment
 
