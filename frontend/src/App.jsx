@@ -2,24 +2,33 @@ import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import SingleCrawlView from './components/SingleCrawlView';
 import LinkCollectorView from './components/LinkCollectorView';
+import BatchCrawlView from './components/BatchCrawlView';
 import PlaceholderView from './components/PlaceholderView';
 import LLMAnalyzerView from './components/LLMAnalyzerView';
 import './index.css';
 
 function App() {
   const [activeView, setActiveView] = useState('single_crawl');
+  // Links transferred from Link Collector → Batch Crawl
+  const [batchLinks, setBatchLinks] = useState([]);
+
+  const handleBatchCrawl = (selectedLinks) => {
+    // Convert Set of hrefs + link objects to {href, text}[]
+    setBatchLinks(selectedLinks);
+    setActiveView('batch_crawl');
+  };
 
   const renderActiveView = () => {
     switch (activeView) {
       case 'single_crawl':
         return <SingleCrawlView />;
       case 'link_collector':
-        return <LinkCollectorView />;
+        return <LinkCollectorView onBatchCrawl={handleBatchCrawl} />;
       case 'batch_crawl':
         return (
-          <PlaceholderView
-            title="Batch Crawl"
-            description="Run high-volume parallel scraping operations across multiple URLs or domains."
+          <BatchCrawlView
+            initialLinks={batchLinks}
+            onClearBatchLinks={() => setBatchLinks([])}
           />
         );
       case 'llm_analyzer':
@@ -47,3 +56,4 @@ function App() {
 }
 
 export default App;
+

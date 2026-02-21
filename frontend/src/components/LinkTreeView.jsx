@@ -106,7 +106,7 @@ const LinkFolder = ({ title, links, selectedUrls, onToggleSelect, onSelectGroup 
     );
 };
 
-const LinkTreeView = ({ data, setData, selectedUrls, setSelectedUrls, seedUrl }) => {
+const LinkTreeView = ({ data, setData, selectedUrls, setSelectedUrls, seedUrl, onBatchCrawl }) => {
     const [viewMode, setViewMode] = useState('list'); // 'list' | 'sitemap'
 
     const toggleSelect = (url) => {
@@ -137,6 +137,16 @@ const LinkTreeView = ({ data, setData, selectedUrls, setSelectedUrls, seedUrl })
             external_links: (prev.external_links || []).filter(l => !selectedUrls.has(l.href)),
         }));
         setSelectedUrls(new Set());
+    };
+
+    // Send selected links to Batch Crawl
+    const handleBatchCrawl = () => {
+        if (!onBatchCrawl || selectedUrls.size === 0) return;
+        const allLinks = [...(data.internal_links || []), ...(data.external_links || [])];
+        const selected = allLinks
+            .filter(l => selectedUrls.has(l.href))
+            .map(l => ({ href: l.href, text: l.text || '' }));
+        onBatchCrawl(selected);
     };
 
     // Check if any links have parent_url data (depth > 0 crawl)
@@ -255,8 +265,13 @@ const LinkTreeView = ({ data, setData, selectedUrls, setSelectedUrls, seedUrl })
                     >
                         Export CSV
                     </button>
-                    <button className="btn-primary" disabled={selectedUrls.size === 0}>
-                        Send to Batch Crawl
+                    <button
+                        className="btn-primary"
+                        disabled={selectedUrls.size === 0 || !onBatchCrawl}
+                        onClick={handleBatchCrawl}
+                        title={selectedUrls.size === 0 ? '링크를 먼저 선택하세요' : `${selectedUrls.size}개 링크를 Batch Crawl로 전송`}
+                    >
+                        📦 Batch Crawl ({selectedUrls.size})
                     </button>
                 </div>
             </div>

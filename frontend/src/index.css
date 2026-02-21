@@ -1302,3 +1302,357 @@ body {
   border-left: 1px solid rgba(59, 130, 246, 0.15);
   margin-left: 1.25rem;
 }
+
+/* =========================================
+   Batch Crawl View
+   ========================================= */
+
+/* Section wrapper */
+.batch-section {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.batch-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.batch-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.batch-clear-btn {
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  padding: 0.3rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.batch-clear-btn:hover {
+  background: rgba(239, 68, 68, 0.12);
+}
+
+/* ── CSV Drop Zone ── */
+.batch-dropzone {
+  border: 2px dashed var(--border-color);
+  border-radius: 10px;
+  padding: 1.5rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: rgba(15, 23, 42, 0.4);
+}
+
+.batch-dropzone:hover,
+.batch-dropzone.drag-over {
+  border-color: var(--accent-color);
+  background: rgba(59, 130, 246, 0.07);
+}
+
+.batch-dropzone-icon {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.batch-dropzone-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.batch-dropzone-text strong {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.batch-dropzone-text span {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+/* ── Link preview table ── */
+.batch-link-table-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.batch-link-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.batch-link-count {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.batch-link-table-scroll {
+  max-height: 380px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.batch-link-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  table-layout: fixed;
+}
+
+.batch-link-table thead {
+  position: sticky;
+  top: 0;
+  background: rgba(30, 41, 59, 0.95);
+  z-index: 1;
+}
+
+.batch-link-table th {
+  padding: 0.6rem 0.85rem;
+  text-align: left;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.batch-link-table td {
+  padding: 0.5rem 0.85rem;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.4);
+  vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.batch-link-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.batch-link-table tbody tr:hover {
+  background: rgba(59, 130, 246, 0.04);
+}
+
+/* Per-row status coloring */
+.batch-row-done td {
+  background: rgba(34, 197, 94, 0.04);
+}
+
+.batch-row-failed td {
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.batch-row-crawling td {
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.batch-td-num {
+  width: 50px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.batch-td-icon {
+  width: 46px;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+.batch-td-text {
+  width: 24%;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.batch-td-url {
+  width: 36%;
+}
+
+.batch-td-url a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.82rem;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.batch-td-url a:hover {
+  color: var(--accent-color);
+  text-decoration: underline;
+}
+
+.batch-td-file {
+  width: 28%;
+  color: var(--text-secondary);
+  font-family: 'Fira Code', monospace;
+  font-size: 0.78rem;
+}
+
+.batch-td-del {
+  width: 36px;
+  text-align: center;
+}
+
+.batch-row-del-btn {
+  background: none;
+  border: none;
+  color: rgba(239, 68, 68, 0.5);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.batch-row-del-btn:hover {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* ── Options Row ── */
+.batch-options-row {
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.batch-folder-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.batch-folder-input {
+  padding: 0.55rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+  font-family: 'Fira Code', monospace;
+}
+
+.batch-folder-input:focus {
+  border-color: var(--accent-color);
+}
+
+.batch-folder-input::placeholder {
+  color: var(--text-muted);
+}
+
+.batch-start-btn {
+  padding: 0.65rem 1.75rem;
+  background: linear-gradient(135deg, var(--accent-color), #6366f1);
+  border: none;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+}
+
+.batch-start-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45);
+}
+
+/* ── Progress Bar ── */
+.batch-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.batch-progress-bar-track {
+  height: 10px;
+  background: rgba(51, 65, 85, 0.6);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.batch-progress-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, var(--accent-color), #6366f1);
+  transition: width 0.4s ease;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+}
+
+.batch-progress-bar-fill.done {
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+}
+
+/* ── Result Banner ── */
+.batch-result-banner {
+  flex-direction: row;
+  align-items: center;
+  gap: 1.25rem;
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.06);
+}
+
+.batch-result-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.batch-result-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.batch-result-text strong {
+  font-size: 1rem;
+  color: #86efac;
+}
+
+.batch-result-text span {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.batch-result-text code {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.82rem;
+  color: #93c5fd;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+}

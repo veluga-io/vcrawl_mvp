@@ -21,7 +21,13 @@ A powerful web scraping testing tool built with FastAPI and React, designed to a
   - **Live Log Streaming (SSE)**: Real-time crawl progress displayed in the UI
   - **Sitemap Tree View**: Hierarchical parent→child URL visualization
   - **Flat List View**: Traditional sortable table with category badges
-  - CSV export and batch crawl integration
+  - CSV export and direct Batch Crawl integration
+- **Batch Crawl**: High-volume URL processing pipeline:
+  - Input via Link Collector selection or CSV upload (drag & drop)
+  - Saves Full Markdown output as `.md` files to OS Downloads folder
+  - File naming: `0001_Link_Text.md` (4-digit zero-padded)
+  - Real-time per-link progress tracking with SSE streaming
+  - Auto-creates timestamped output folder (`vcrawl_batch_YYYYMMDD_HHMMSS/`)
 - **Premium Dark UI**: Modern, responsive interface with smooth animations
 
 ## 📋 Prerequisites
@@ -92,8 +98,9 @@ Vcrawl_mvp/
 │   │   │   ├── LoadingSpinner.jsx
 │   │   │   ├── SingleCrawlView.jsx
 │   │   │   ├── LinkCollectorView.jsx  # SSE stream consumer
-│   │   │   ├── LinkTreeView.jsx       # List/Sitemap toggle
+│   │   │   ├── LinkTreeView.jsx       # List/Sitemap toggle + Batch Crawl button
 │   │   │   ├── SitemapTreeView.jsx    # Hierarchical tree view
+│   │   │   ├── BatchCrawlView.jsx     # Batch crawl pipeline UI
 │   │   │   ├── LLMAnalyzer.jsx
 │   │   │   └── LLMAnalyzerView.jsx
 │   │   ├── App.jsx         # Main application + sidebar
@@ -141,13 +148,38 @@ Crawl and analyze a website.
 }
 ```
 
+### POST `/api/v1/batch-crawl` *(SSE)*
+
+Crawl multiple URLs and save Full Markdown files to the OS Downloads folder.
+
+**Request Body:**
+```json
+{
+  "links": [
+    { "href": "https://example.com/page", "text": "Page Title" }
+  ],
+  "output_folder_name": ""  // optional, auto-generated if empty
+}
+```
+
+**SSE Events:**
+```
+type: log       → { message }
+type: progress  → { current, total, url, filename, status, error? }
+type: complete  → { folder_path, total_success, total_failed }
+type: error     → { message }
+```
+
+**Output location:** `~/Downloads/vcrawl_batch_YYYYMMDD_HHMMSS/`  
+**File naming:** `0001_Link_Text.md`, `0002_About_Us.md`, …
+
 ## 🎨 UI Features
 
 ### Dashboard Views
 
 1. **Single Crawl** — Crawl a single URL, view results in multiple formats
 2. **Link Collector** — Multi-depth link discovery with live streaming logs and sitemap view
-3. **Batch Crawl** — *(planned)* Batch process multiple URLs
+3. **Batch Crawl** — Batch process multiple URLs, save Full Markdown to Downloads folder
 4. **LLM Analyzer** — Analyze crawled content with Gemini or OpenAI models
 
 ### Single Crawl Tabs
@@ -169,6 +201,20 @@ Crawl and analyze a website.
   - **List mode** (4 cols): `Category`, `Link Text`, `URL`, `Internal/External`
 - **Delete Selection**: Removes checkbox-selected URLs from the result list (replaces "Clear Selection")
 - **Selection Counter**: Shows `Selected / Total` link count
+- **`📦 Batch Crawl (N)` button**: Sends selected links directly to Batch Crawl tab
+
+### Batch Crawl Features
+
+- **Two Input Methods**:
+  - Link Collector → select links → `📦 Batch Crawl (N)` button (auto-navigates)
+  - CSV upload (drag & drop) — supports both List and Sitemap export formats
+- **Link Preview Table**: Shows link text, URL, status icon, and output filename before/during crawl
+- **Per-link Status**: `⏳ Pending` → `🔄 Crawling` → `✅ Done` / `❌ Failed`
+- **Progress Bar**: Animated progress bar with percentage
+- **Live Log Panel**: SSE-streamed events in real time
+- **Result Banner**: Shows exact output folder path on completion
+- **Custom Folder Name**: Optional — defaults to `vcrawl_batch_YYYYMMDD_HHMMSS/`
+- **File Naming**: `0001_Link_Text.md` (4-digit zero-padded index + sanitized link text)
 
 ## 🐳 Docker Deployment
 

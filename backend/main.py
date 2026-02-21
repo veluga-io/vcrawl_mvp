@@ -497,5 +497,162 @@ async def collect_links(request: CollectLinksRequest):
         },
     )
 
+# ──────────────────────────────────────────────
+# Batch Crawl – Crawl multiple URLs and save Full Markdown to Downloads
+# ──────────────────────────────────────────────
+
+import re
+import pathlib
+import datetime
+
+class BatchCrawlLink(BaseModel):
+    href: str
+    text: str = ""
+
+class BatchCrawlRequest(BaseModel):
+    links: list[BatchCrawlLink]
+    output_folder_name: str = ""
+
+def _safe_filename(text: str, index: int, max_len: int = 80) -> str:
+    """Build a safe 4-digit-padded filename from link text."""
+    prefix = f"{index:04d}"
+    if not text.strip():
+        return f"{prefix}_page"
+    # Replace problematic characters with underscore
+    clean = re.sub(r'[\\/:*?"<>|]', '_', text.strip())
+    # Collapse multiple spaces/underscores
+    clean = re.sub(r'[\s_]+', '_', clean)
+    # Trim to max_len
+    clean = clean[:max_len]
+    # Strip leading/trailing underscores
+    clean = clean.strip('_')
+    return f"{prefix}_{clean}" if clean else prefix
+
+async def _batch_crawl_generator(request: BatchCrawlRequest):
+    """SSE generator: crawls each link and saves Full Markdown to the Downloads folder."""
+    import json
+
+    def sse(data: dict) -> str:
+        return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+    try:
+        from crawl4ai import BrowserConfig, CrawlerRunConfig
+
+        if not request.links:
+            yield sse({"type": "error", "message": "링크 목록이 비어 있습니다."})
+            return
+
+        # Determine output folder
+        downloads_dir = pathlib.Path.home() / "Downloads"
+        folder_name = request.output_folder_name.strip()
+        if not folder_name:
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            folder_name = f"vcrawl_batch_{timestamp}"
+        output_dir = downloads_dir / folder_name
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        total = len(request.links)
+        yield sse({"type": "log", "message": f"📁 출력 폴더: {output_dir}"})
+        yield sse({"type": "log", "message": f"📋 총 {total}개 링크 처리 시작…"})
+
+        browser_config = BrowserConfig(headless=True, verbose=False)
+        crawl_config = CrawlerRunConfig(
+            wait_until="domcontentloaded",
+            page_timeout=90000,
+            delay_before_return_html=2.0,
+        )
+
+        success_count = 0
+        fail_count = 0
+
+        async with AsyncWebCrawler(config=browser_config, verbose=False) as crawler:
+            for idx, link in enumerate(request.links, start=1):
+                url = link.href.strip()
+                link_text = link.text.strip() or url
+                if not url.startswith(("http://", "https://")):
+                    url = "https://" + url
+
+                filename = _safe_filename(link_text, idx) + ".md"
+                filepath = output_dir / filename
+
+                yield sse({
+                    "type": "progress",
+                    "current": idx,
+                    "total": total,
+                    "url": url,
+                    "filename": filename,
+                    "status": "crawling",
+                })
+
+                try:
+                    result = await crawler.arun(url=url, config=crawl_config)
+
+                    if not result.success:
+                        fail_count += 1
+                        yield sse({
+                            "type": "progress",
+                            "current": idx,
+                            "total": total,
+                            "url": url,
+                            "filename": filename,
+                            "status": "failed",
+                            "error": result.error_message or "Unknown error",
+                        })
+                        continue
+
+                    # Build Full Markdown with citation
+                    source_url = result.url or url
+                    citation = f"\n\n---\n**출처(Citations):** [{source_url}]({source_url})"
+                    markdown_content = (result.markdown or "") + citation
+
+                    # Write to file (UTF-8)
+                    filepath.write_text(markdown_content, encoding="utf-8")
+                    success_count += 1
+
+                    yield sse({
+                        "type": "progress",
+                        "current": idx,
+                        "total": total,
+                        "url": url,
+                        "filename": filename,
+                        "status": "done",
+                    })
+
+                except Exception as e:
+                    fail_count += 1
+                    yield sse({
+                        "type": "progress",
+                        "current": idx,
+                        "total": total,
+                        "url": url,
+                        "filename": filename,
+                        "status": "failed",
+                        "error": str(e),
+                    })
+
+        yield sse({
+            "type": "complete",
+            "folder_path": str(output_dir),
+            "total_success": success_count,
+            "total_failed": fail_count,
+        })
+
+    except Exception as e:
+        import json
+        yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+
+@app.post("/api/v1/batch-crawl")
+async def batch_crawl(request: BatchCrawlRequest):
+    return StreamingResponse(
+        _batch_crawl_generator(request),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)

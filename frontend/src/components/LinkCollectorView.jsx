@@ -3,7 +3,7 @@ import SearchBar from './SearchBar';
 import LoadingSpinner from './LoadingSpinner';
 import LinkTreeView from './LinkTreeView';
 
-const LinkCollectorView = () => {
+const LinkCollectorView = ({ onBatchCrawl }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState(null);
     const [error, setError] = useState(null);
@@ -154,6 +154,7 @@ const LinkCollectorView = () => {
                         selectedUrls={selectedUrls}
                         setSelectedUrls={setSelectedUrls}
                         seedUrl={crawledUrl}
+                        onBatchCrawl={onBatchCrawl}
                     />
                 )}
 
