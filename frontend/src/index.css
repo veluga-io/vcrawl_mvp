@@ -19,41 +19,187 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* App Container */
-.app-container {
-  min-height: 100vh;
-  background: linear-gradient(to bottom right, #0f172a, #1e293b);
+/* -----------------------------------
+   Dashboard Layout Variables
+----------------------------------- */
+:root {
+  --sidebar-width: 260px;
+  --sidebar-bg: #111827;
+  /* Slightly darker/distinct from main bg */
+  --sidebar-border: #1f2937;
+  --nav-hover-bg: #1f2937;
+  --nav-active-bg: #2563eb;
+}
+
+/* -----------------------------------
+   Base Dashboard Grid
+----------------------------------- */
+.app-container,
+.dashboard-layout {
   display: flex;
-  justify-content: center;
-  padding: 3rem 1rem;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: var(--bg-primary);
 }
 
-.main-content {
-  width: 100%;
-  max-width: 1200px;
+.dashboard-main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: linear-gradient(to bottom right, #0f172a, #1e293b);
+  position: relative;
 }
 
-/* Header */
-.app-header {
-  text-align: center;
-  margin-bottom: 4rem;
+/* -----------------------------------
+   Sidebar Component
+----------------------------------- */
+.app-sidebar {
+  width: var(--sidebar-width);
+  background-color: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
-.app-title {
-  font-size: 3rem;
+.sidebar-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--sidebar-border);
+}
+
+.sidebar-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
   font-weight: 800;
-  margin-bottom: 1rem;
   background: linear-gradient(to right, #60a5fa, #a855f7);
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
 }
 
-.app-subtitle {
+.sidebar-nav {
+  padding: 1rem 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0 0.75rem;
+}
+
+.bottom-group {
+  margin-top: auto;
+  padding-bottom: 1rem;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  border: none;
+  background: transparent;
   color: var(--text-secondary);
-  font-size: 1.125rem;
-  max-width: 600px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.nav-item:hover {
+  background-color: var(--nav-hover-bg);
+  color: var(--text-primary);
+}
+
+.nav-item.active {
+  background-color: var(--nav-active-bg);
+  color: #fff;
+}
+
+.nav-icon {
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+}
+
+/* -----------------------------------
+   View Containers (Main Area)
+----------------------------------- */
+.view-container {
+  max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
+  padding: 3rem 2rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.view-header {
+  margin-bottom: 3rem;
+}
+
+.view-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin: 0 0 0.5rem 0;
+  color: var(--text-primary);
+}
+
+.view-subtitle {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.view-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* -----------------------------------
+   Placeholder & Empty States
+----------------------------------- */
+.placeholder-content {
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.construction-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+
+  40% {
+    transform: translateY(-20px);
+  }
+
+  60% {
+    transform: translateY(-10px);
+  }
 }
 
 /* Search Bar */
