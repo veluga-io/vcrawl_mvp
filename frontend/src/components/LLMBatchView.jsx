@@ -186,13 +186,19 @@ const LLMBatchView = () => {
         setError(null);
         setSuccessMessage(null);
 
+        // Derive results folder path from the jsonl folder path
+        let outPath = '';
+        if (jsonlFolderPath) {
+            outPath = jsonlFolderPath.replace(/_jsonl[\\\/]?$/, '') + '_results';
+        }
+
         try {
             const res = await fetch('/api/v1/llm-batch/results', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     batch_ids: completedBatchIds,
-                    output_folder_path: ''
+                    output_folder_path: outPath
                 })
             });
             const data = await res.json();
