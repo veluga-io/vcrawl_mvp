@@ -5,6 +5,7 @@ import LinkCollectorView from './components/LinkCollectorView';
 import BatchCrawlView from './components/BatchCrawlView';
 import PlaceholderView from './components/PlaceholderView';
 import LLMAnalyzerView from './components/LLMAnalyzerView';
+import LLMBatchView from './components/LLMBatchView';
 import './index.css';
 
 function App() {
@@ -33,6 +34,8 @@ function App() {
         );
       case 'llm_analyzer':
         return <LLMAnalyzerView />;
+      case 'llm_batch':
+        return <LLMBatchView />;
       case 'settings':
         return (
           <PlaceholderView

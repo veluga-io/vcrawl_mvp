@@ -28,6 +28,11 @@ A powerful web scraping testing tool built with FastAPI and React, designed to a
   - File naming: `0001_Link_Text.md` (4-digit zero-padded)
   - Real-time per-link progress tracking with SSE streaming
   - Auto-creates timestamped output folder (`vcrawl_batch_YYYYMMDD_HHMMSS/`)
+- **LLM Batch**: High-volume, cost-effective LLM processing using OpenAI Batch API:
+  - Convert folder of `.md` files to `.jsonl` with custom system prompts
+  - Select from lightweight reasoning models (`gpt-5-mini`, `gpt-5-nano`)
+  - Submit batches, monitor status, and download results natively
+  - Automatically renames files with `[STATUS: REJECTED]` based on prompt dropping rules
 - **Premium Dark UI**: Modern, responsive interface with smooth animations
 
 ## 📋 Prerequisites

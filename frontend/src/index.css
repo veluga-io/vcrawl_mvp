@@ -1656,3 +1656,203 @@ body {
   border-radius: 4px;
   padding: 0.1rem 0.35rem;
 }
+
+/* -----------------------------------
+   LLM Batch View Styles
+----------------------------------- */
+.llm-batch-view .view-content {
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.llm-batch-steps {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+}
+
+.step-btn {
+  flex: 1;
+  padding: 1rem;
+  background: rgba(30, 41, 59, 0.4);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-align: center;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.step-btn.completed {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #34d399;
+}
+
+.step-btn.active {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: var(--accent-color);
+  color: #fff;
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.15);
+}
+
+.batch-card {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 2rem;
+  backdrop-filter: blur(8px);
+}
+
+.batch-card h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+  color: var(--text-primary);
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group.row {
+  flex-direction: row;
+  gap: 1.5rem;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.form-group label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.action-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2rem;
+}
+
+.primary-btn {
+  padding: 0.75rem 2rem;
+  background: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 150px;
+}
+
+.primary-btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.primary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.secondary-btn {
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.secondary-btn:hover:not(:disabled) {
+  border-color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-badge.in_progress {
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+}
+
+.status-badge.completed {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+}
+
+.status-badge.failed {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+.status-badge.validating {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fcd34d;
+}
+
+.status-badge.cancelled {
+  background: rgba(107, 114, 128, 0.2);
+  color: #d1d5db;
+}
+
+.batch-table-container {
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: rgba(30, 41, 59, 0.3);
+}
+
+.success-banner {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+}
+
+.success-banner h3 {
+  color: #34d399;
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.success-message {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.mt-2 {
+  margin-top: 0.5rem;
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}

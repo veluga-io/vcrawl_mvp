@@ -642,6 +642,216 @@ async def _batch_crawl_generator(request: BatchCrawlRequest):
         yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
 
 
+# ──────────────────────────────────────────────
+# LLM Batch — OpenAI Batch API
+# ──────────────────────────────────────────────
+import json
+import uuid
+
+class LLMBatchConvertRequest(BaseModel):
+    folder_path: str
+    instruction: str
+    model: str = "gpt-5-mini"
+
+class LLMBatchSubmitRequest(BaseModel):
+    jsonl_folder_path: str
+
+class LLMBatchStatusRequest(BaseModel):
+    batch_ids: list[str]
+
+class LLMBatchResultsRequest(BaseModel):
+    batch_ids: list[str]
+    output_folder_path: str = ""
+
+@app.post("/api/v1/llm-batch/convert")
+async def batch_convert(request: LLMBatchConvertRequest):
+    try:
+        folder_path = pathlib.Path(request.folder_path.strip('"\' '))
+        if not folder_path.is_dir():
+            raise Exception(f"Invalid directory path: {folder_path}")
+
+        md_files = list(folder_path.glob("*.md"))
+        if not md_files:
+            raise Exception("No .md files found in the directory.")
+
+        output_dir = folder_path.parent / f"{folder_path.name}_jsonl"
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        files_info = []
+        for idx, file_path in enumerate(md_files, start=1):
+            content = file_path.read_text(encoding="utf-8")
+            custom_id = f"file_{idx:04d}_{file_path.stem}"
+
+            # API Format Change: the new models do NOT support 'system' roles directly
+            # For gpt-5 family, we combine system instruction into user content like Litellm patch does.
+            if "gpt-5" in request.model:
+                messages = [{"role": "user", "content": f"System Instruction:\n{request.instruction}\n\nUser Content:\n{content}"}]
+                body = {
+                    "model": request.model,
+                    "messages": messages,
+                    "reasoning_effort": "low"
+                }
+            else:
+                messages = [
+                    {"role": "system", "content": request.instruction},
+                    {"role": "user", "content": content}
+                ]
+                body = {
+                    "model": request.model,
+                    "messages": messages
+                }
+
+            jsonl_entry = {
+                "custom_id": custom_id,
+                "method": "POST",
+                "url": "/v1/chat/completions",
+                "body": body
+            }
+
+            out_file = output_dir / f"{custom_id}.jsonl"
+            with open(out_file, "w", encoding="utf-8") as f:
+                f.write(json.dumps(jsonl_entry, ensure_ascii=False) + "\n")
+            
+            files_info.append({"custom_id": custom_id, "file_path": str(out_file)})
+
+        return {"success": True, "output_folder": str(output_dir), "file_count": len(files_info), "files": files_info}
+    except Exception as e:
+        return {"success": False, "error_message": str(e)}
+
+@app.post("/api/v1/llm-batch/submit")
+async def batch_submit(request: LLMBatchSubmitRequest):
+    try:
+        import openai
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise Exception("OPENAI_API_KEY is not set.")
+        client = openai.OpenAI(api_key=api_key)
+
+        folder_path = pathlib.Path(request.jsonl_folder_path.strip('"\' '))
+        if not folder_path.is_dir():
+            raise Exception(f"Invalid directory path: {folder_path}")
+
+        jsonl_files = list(folder_path.glob("*.jsonl"))
+        if not jsonl_files:
+            raise Exception("No .jsonl files found in the directory.")
+
+        batches = []
+        for file_path in jsonl_files:
+            with open(file_path, "rb") as f:
+                file_obj = client.files.create(file=f, purpose="batch")
+            
+            batch_job = client.batches.create(
+                input_file_id=file_obj.id,
+                endpoint="/v1/chat/completions",
+                completion_window="24h"
+            )
+            batches.append({
+                "batch_id": batch_job.id,
+                "input_file_id": file_obj.id,
+                "filename": file_path.name,
+                "status": batch_job.status
+            })
+
+        return {"success": True, "batches": batches}
+    except Exception as e:
+        return {"success": False, "error_message": str(e)}
+
+@app.post("/api/v1/llm-batch/status")
+async def batch_status(request: LLMBatchStatusRequest):
+    try:
+        import openai
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise Exception("OPENAI_API_KEY is not set.")
+        client = openai.OpenAI(api_key=api_key)
+
+        batches_info = []
+        for batch_id in request.batch_ids:
+            batch_job = client.batches.retrieve(batch_id)
+            batches_info.append({
+                "batch_id": batch_job.id,
+                "status": batch_job.status,
+                "completed": batch_job.request_counts.completed if batch_job.request_counts else 0,
+                "failed": batch_job.request_counts.failed if batch_job.request_counts else 0,
+                "total": batch_job.request_counts.total if batch_job.request_counts else 0,
+                "output_file_id": batch_job.output_file_id,
+                "error_file_id": batch_job.error_file_id
+            })
+
+        return {"success": True, "batches": batches_info}
+    except Exception as e:
+        return {"success": False, "error_message": str(e)}
+
+@app.post("/api/v1/llm-batch/results")
+async def batch_results(request: LLMBatchResultsRequest):
+    try:
+        import openai
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise Exception("OPENAI_API_KEY is not set.")
+        client = openai.OpenAI(api_key=api_key)
+
+        if not request.batch_ids:
+            raise Exception("No batch IDs provided.")
+
+        total_files = 0
+        rejected_count = 0
+        
+        # Determine output folder
+        # For simplicity, we create a default folder in the user's Downloads or beside the script if path not provided.
+        # But we'll try to put it beside the current working directory if output_folder_path is empty.
+        if request.output_folder_path:
+            output_dir = pathlib.Path(request.output_folder_path.strip('"\' '))
+        else:
+            output_dir = pathlib.Path.cwd() / "batch_results"
+        
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        for batch_id in request.batch_ids:
+            batch_job = client.batches.retrieve(batch_id)
+            if batch_job.status == "completed" and batch_job.output_file_id:
+                # Download results
+                response = client.files.content(batch_job.output_file_id)
+                content = response.text
+                
+                for line in content.strip().split("\n"):
+                    if not line.strip(): continue
+                    result_data = json.loads(line)
+                    
+                    custom_id = result_data.get("custom_id", f"unknown_{uuid.uuid4().hex[:8]}")
+                    
+                    try:
+                        response_body = result_data["response"]["body"]
+                        llm_text = response_body["choices"][0]["message"]["content"]
+                    except (KeyError, IndexError, TypeError):
+                        llm_text = "ERROR: Failed to parse LLM response from batch result."
+                    
+                    # Original filename logic
+                    # custom_id format is typically "file_0001_filename"
+                    # We'll just use the custom_id as base filename if possible
+                    base_filename = custom_id
+                    if base_filename.startswith("file_"):
+                        # strip the "file_" prefix
+                        base_filename = base_filename[5:]
+                    
+                    if "[STATUS: REJECTED]" in llm_text:
+                        rejected_count += 1
+                        out_file = output_dir / f"{base_filename} [STATUS: REJECTED].md"
+                    else:
+                        out_file = output_dir / f"{base_filename}.md"
+                    
+                    out_file.write_text(llm_text, encoding="utf-8")
+                    total_files += 1
+
+        return {
+            "success": True, 
+            "output_folder": str(output_dir), 
+            "total_files": total_files, 
+            "rejected_count": rejected_count
+        }
+    except Exception as e:
+        return {"success": False, "error_message": str(e)}
+
 @app.post("/api/v1/batch-crawl")
 async def batch_crawl(request: BatchCrawlRequest):
     return StreamingResponse(

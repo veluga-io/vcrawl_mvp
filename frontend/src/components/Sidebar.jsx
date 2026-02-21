@@ -8,6 +8,7 @@ const Sidebar = ({ activeView, setActiveView }) => {
         { id: 'link_collector', label: 'Link Collector', icon: '🔗' },
         { id: 'batch_crawl', label: 'Batch Crawl', icon: '📦' },
         { id: 'llm_analyzer', label: 'LLM Analyzer', icon: '🧠' },
+        { id: 'llm_batch', label: 'LLM Batch', icon: '⚡' },
     ];
 
     const bottomItems = [
