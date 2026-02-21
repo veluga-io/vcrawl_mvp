@@ -13,12 +13,11 @@ const MODELS = [
 const SearchBar = ({ onAnalyze, isLoading }) => {
     const [url, setUrl] = useState('');
     const [llmModel, setLlmModel] = useState('none');
-    const [instruction, setInstruction] = useState('Extract the main content, key points, and purpose of this page. Structure the output clearly in markdown.');
 
     const handleSubmit = (e) => {
         e.preventDefault();
         if (url.trim()) {
-            onAnalyze(url, llmModel, instruction);
+            onAnalyze(url, llmModel);
         }
     };
 
@@ -61,20 +60,6 @@ const SearchBar = ({ onAnalyze, isLoading }) => {
                     </button>
                 </div>
             </form>
-            {llmModel !== 'none' && (
-                <div className="instruction-container">
-                    <label htmlFor="instruction">LLM Extraction Instruction</label>
-                    <textarea
-                        id="instruction"
-                        value={instruction}
-                        onChange={(e) => setInstruction(e.target.value)}
-                        placeholder="Enter custom instructions for LLM extraction..."
-                        disabled={isLoading}
-                        rows={3}
-                        className="instruction-textarea"
-                    />
-                </div>
-            )}
         </div>
     );
 };

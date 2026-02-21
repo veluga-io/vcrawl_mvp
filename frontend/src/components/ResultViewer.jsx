@@ -14,8 +14,6 @@ const ResultViewer = ({ data }) => {
                 return data.content_only_markdown;
             case 'content_html':
                 return data.content_only_html;
-            case 'llm_extraction':
-                return data.llm_extraction;
             default:
                 return '';
         }
@@ -30,14 +28,6 @@ const ResultViewer = ({ data }) => {
         <div className="result-viewer">
             <div className="result-header">
                 <div className="tabs">
-                    {data.llm_extraction && (
-                        <button
-                            onClick={() => setActiveTab('llm_extraction')}
-                            className={`tab-button ${activeTab === 'llm_extraction' ? 'active' : ''}`}
-                        >
-                            LLM Extraction
-                        </button>
-                    )}
                     <button
                         onClick={() => setActiveTab('content_markdown')}
                         className={`tab-button ${activeTab === 'content_markdown' ? 'active' : ''}`}
@@ -105,7 +95,6 @@ const ResultViewer = ({ data }) => {
                             {activeTab === 'html' && data.html}
                             {activeTab === 'content_markdown' && data.content_only_markdown}
                             {activeTab === 'content_html' && data.content_only_html}
-                            {activeTab === 'llm_extraction' && data.llm_extraction}
                         </code>
                     </pre>
                 )}

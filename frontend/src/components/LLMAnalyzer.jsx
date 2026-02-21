@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import '../index.css';
 
 const SOURCE_OPTIONS = [
-    { value: 'llm_extraction', label: 'LLM Extraction' },
     { value: 'content_markdown', label: 'Content (MD)' },
     { value: 'content_html', label: 'Content (HTML)' },
     { value: 'markdown', label: 'Full Markdown' },
@@ -12,7 +11,6 @@ const SOURCE_OPTIONS = [
 const getDataBySource = (data, source) => {
     if (!data) return '';
     switch (source) {
-        case 'llm_extraction': return data.llm_extraction || '';
         case 'content_markdown': return data.content_only_markdown || '';
         case 'content_html': return data.content_only_html || '';
         case 'markdown': return data.markdown || '';

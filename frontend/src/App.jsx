@@ -11,7 +11,7 @@ function App() {
   const [error, setError] = useState(null);
   const [activeModel, setActiveModel] = useState('none');
 
-  const handleAnalyze = async (url, llmModel, instruction) => {
+  const handleAnalyze = async (url, llmModel) => {
     setIsLoading(true);
     setError(null);
     setResult(null);
@@ -30,8 +30,7 @@ function App() {
         },
         body: JSON.stringify({
           url: urlToCrawl,
-          llm_model: llmModel,
-          instruction: instruction
+          llm_model: llmModel
         }),
       });
 

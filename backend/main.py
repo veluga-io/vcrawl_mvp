@@ -14,7 +14,46 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# --- Patch litellm for GPT-5 model family API changes ---
+import litellm
+import copy
+
+_original_completion = litellm.completion
+
+def _patched_completion(*args, **kwargs):
+    model = kwargs.get("model") or (args[0] if args else "")
+    
+    # Check if this is a gpt-5 family model
+    if "gpt-5" in model:
+        # 1. API Format Change: the new models do NOT support 'system' roles directly
+        if "messages" in kwargs:
+            messages = copy.deepcopy(kwargs["messages"])
+            new_msgs = []
+            sys_content = ""
+            for m in messages:
+                if m.get("role") == "system":
+                    sys_content += m.get("content", "") + "\n\n"
+                else:
+                    new_msgs.append(m)
+                    
+            if sys_content and new_msgs and new_msgs[0]["role"] == "user":
+                new_msgs[0]["content"] = f"System Instruction:\n{sys_content}\nUser Content:\n{new_msgs[0].get('content', '')}"
+            elif sys_content:
+                new_msgs.insert(0, {"role": "user", "content": sys_content})
+                
+            kwargs["messages"] = new_msgs
+            
+        # 2. API Format Change: 'max_tokens' has been replaced with 'max_completion_tokens'
+        if "max_tokens" in kwargs:
+            kwargs["max_completion_tokens"] = kwargs.pop("max_tokens")
+            
+    return _original_completion(*args, **kwargs)
+
+litellm.completion = _patched_completion
+# --------------------------------------------------------
+
 # Fix for Windows asyncio loop policy
+
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
@@ -166,35 +205,11 @@ async def crawl(request: CrawlRequest):
             verbose=True
         )
         
-        extraction_strategy = None
-        instruction = request.instruction or "Extract the main content, key points, and purpose of this page. Structure the output clearly in markdown."
-        
-        if request.llm_model != "none" and request.llm_model:
-            model_str = request.llm_model  # e.g. 'gemini/gemini-3-pro-preview'
-            provider = model_str.split('/')[0] if '/' in model_str else model_str
-            
-            if provider == "gemini":
-                api_token = os.getenv("GEMINI_API_KEY")
-                if not api_token:
-                    raise Exception("GEMINI_API_KEY is not set in the environment.")
-            elif provider == "openai":
-                api_token = os.getenv("OPENAI_API_KEY")
-                if not api_token:
-                    raise Exception("OPENAI_API_KEY is not set in the environment.")
-            else:
-                raise Exception(f"Unsupported LLM provider: '{provider}'")
-            
-            extraction_strategy = LLMExtractionStrategy(
-                llm_config=LLMConfig(provider=model_str, api_token=api_token),
-                instruction=instruction
-            )
-        
         # Try with networkidle first, but have a fallback
         crawl_config = CrawlerRunConfig(
             wait_until="domcontentloaded",  # More reliable than networkidle
-            page_timeout=90000,  # 90 seconds timeout (increased for slow pages)
-            delay_before_return_html=2.0,  # Wait 2 seconds before capturing
-            extraction_strategy=extraction_strategy
+            page_timeout=90000,             # 90 seconds timeout (increased for slow pages)
+            delay_before_return_html=2.0    # Wait 2 seconds before capturing
         )
         
         async with AsyncWebCrawler(config=browser_config, verbose=True) as crawler:
@@ -231,17 +246,13 @@ async def crawl(request: CrawlRequest):
             print(f"[DEBUG] Content-only HTML length: {len(content_only_html)}")
             print(f"[DEBUG] Content-only Markdown length: {len(content_only_markdown)}")
             
-            llm_content = ""
-            if extraction_strategy and result.extracted_content:
-                llm_content = result.extracted_content
-
             return CrawlResponse(
                 success=True,
                 markdown=result.markdown or "",
                 html=result.cleaned_html or result.html or "",
                 content_only_markdown=content_only_markdown,
                 content_only_html=content_only_html,
-                llm_extraction=llm_content,
+                llm_extraction="",
                 structure=structure_data,
                 metadata={
                     "url": result.url,
