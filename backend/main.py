@@ -389,7 +389,7 @@ async def collect_links(request: CollectLinksRequest):
         base_domain = parsed_seed.netloc
         
         target_depth = max(0, min(request.depth, 3)) # Cap depth to 3 for safety
-        max_urls = max(1, min(request.max_urls, 1000)) # Cap max URLs to 1000
+        max_urls = max(1, min(request.max_urls, 2000)) # Cap max URLs to 2000
         
         all_internal_items = {} # dict of href -> LinkItem to easily dedup
         all_external_items = {} 

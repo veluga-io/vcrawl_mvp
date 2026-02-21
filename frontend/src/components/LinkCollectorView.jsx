@@ -30,7 +30,7 @@ const LinkCollectorView = () => {
                 body: JSON.stringify({
                     url: urlToCrawl,
                     depth: depth,
-                    max_urls: 500 // Hard limit to prevent infinite crawl loops on huge sites
+                    max_urls: 1400
                 }),
             });
 

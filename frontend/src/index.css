@@ -253,8 +253,9 @@ body {
 .search-form {
   position: relative;
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
 }
 
 .search-input-wrapper {
@@ -676,6 +677,7 @@ body {
 .search-extra-controls {
   margin-top: 1rem;
   padding-top: 1rem;
+  padding-left: 1rem;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
