@@ -483,6 +483,17 @@ const LLMBatchView = () => {
                             </button>
                         </div>
 
+                        <div className="form-group mt-4">
+                            <label>Output Folder Path (Optional)</label>
+                            <input
+                                className="search-input"
+                                type="text"
+                                value={recoveryFolderPath}
+                                onChange={e => setRecoveryFolderPath(e.target.value)}
+                                placeholder="Leave empty for default directory"
+                            />
+                        </div>
+
                         {recoveryBatches.length > 0 && (
                             <div className="batch-table-container mt-4">
                                 <table className="batch-link-table">
@@ -515,17 +526,7 @@ const LLMBatchView = () => {
                                     </tbody>
                                 </table>
 
-                                <div className="form-group mt-4">
-                                    <label>Output Folder Path (Optional)</label>
-                                    <input
-                                        className="search-input"
-                                        type="text"
-                                        value={recoveryFolderPath}
-                                        onChange={e => setRecoveryFolderPath(e.target.value)}
-                                        placeholder="Leave empty for default directory"
-                                    />
-                                </div>
-                                <div className="action-row">
+                                <div className="action-row mt-4">
                                     <button
                                         className="primary-btn"
                                         onClick={handleDownloadRecoveryResults}
