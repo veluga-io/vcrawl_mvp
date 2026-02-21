@@ -249,12 +249,21 @@ async def crawl(request: CrawlRequest):
             print(f"[DEBUG] Content-only HTML length: {len(content_only_html)}")
             print(f"[DEBUG] Content-only Markdown length: {len(content_only_markdown)}")
             
+            source_url = result.url or request.url
+            md_citation = f"\n\n---\n**출처(Citations):** [{source_url}]({source_url})"
+            html_citation = f"<br><hr><p><strong>출처(Citations):</strong> <a href='{source_url}'>{source_url}</a></p>"
+
+            final_markdown = (result.markdown or "") + md_citation
+            final_html = (result.cleaned_html or result.html or "") + html_citation
+            final_content_only_markdown = content_only_markdown + md_citation if content_only_markdown else ""
+            final_content_only_html = content_only_html + html_citation if content_only_html else ""
+            
             return CrawlResponse(
                 success=True,
-                markdown=result.markdown or "",
-                html=result.cleaned_html or result.html or "",
-                content_only_markdown=content_only_markdown,
-                content_only_html=content_only_html,
+                markdown=final_markdown,
+                html=final_html,
+                content_only_markdown=final_content_only_markdown,
+                content_only_html=final_content_only_html,
                 llm_extraction="",
                 structure=structure_data,
                 metadata={
