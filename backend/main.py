@@ -823,19 +823,39 @@ async def batch_list(request: LLMBatchListRequest):
             raise Exception("OPENAI_API_KEY is not set.")
         client = openai.OpenAI(api_key=api_key)
 
-        batch_jobs = client.batches.list(limit=request.limit)
         batches_info = []
-        for batch_job in batch_jobs.data:
-            batches_info.append({
-                "batch_id": batch_job.id,
-                "status": batch_job.status,
-                "completed": batch_job.request_counts.completed if batch_job.request_counts else 0,
-                "failed": batch_job.request_counts.failed if batch_job.request_counts else 0,
-                "total": batch_job.request_counts.total if batch_job.request_counts else 0,
-                "created_at": batch_job.created_at,
-                "output_file_id": batch_job.output_file_id,
-                "error_file_id": batch_job.error_file_id
-            })
+        target_limit = request.limit
+        fetched_count = 0
+        last_id = None
+
+        while fetched_count < target_limit:
+            # The maximum allowed per request by OpenAI is 100
+            fetch_size = min(100, target_limit - fetched_count)
+            
+            kwargs = {"limit": fetch_size}
+            if last_id:
+                kwargs["after"] = last_id
+                
+            batch_jobs = client.batches.list(**kwargs)
+            data_list = list(batch_jobs.data)
+            
+            if not data_list:
+                break # No more batches available
+
+            for batch_job in data_list:
+                batches_info.append({
+                    "batch_id": batch_job.id,
+                    "status": batch_job.status,
+                    "completed": batch_job.request_counts.completed if batch_job.request_counts else 0,
+                    "failed": batch_job.request_counts.failed if batch_job.request_counts else 0,
+                    "total": batch_job.request_counts.total if batch_job.request_counts else 0,
+                    "created_at": batch_job.created_at,
+                    "output_file_id": batch_job.output_file_id,
+                    "error_file_id": batch_job.error_file_id
+                })
+            
+            fetched_count += len(data_list)
+            last_id = data_list[-1].id
 
         return {"success": True, "batches": batches_info}
     except Exception as e:
