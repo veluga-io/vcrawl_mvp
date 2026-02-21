@@ -24,11 +24,13 @@ body {
 ----------------------------------- */
 :root {
   --sidebar-width: 260px;
+  --sidebar-collapsed-width: 70px;
   --sidebar-bg: #111827;
   /* Slightly darker/distinct from main bg */
   --sidebar-border: #1f2937;
   --nav-hover-bg: #1f2937;
   --nav-active-bg: #2563eb;
+  --sidebar-transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* -----------------------------------
@@ -62,11 +64,22 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
+  transition: var(--sidebar-transition);
+  position: relative;
+}
+
+.app-sidebar.collapsed {
+  width: var(--sidebar-collapsed-width);
 }
 
 .sidebar-header {
   padding: 1.5rem;
   border-bottom: 1px solid var(--sidebar-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 70px;
+  box-sizing: border-box;
 }
 
 .sidebar-header h2 {
@@ -77,6 +90,31 @@ body {
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sidebar-toggle-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.sidebar-toggle-btn:hover {
+  background: var(--nav-hover-bg);
+  color: var(--text-primary);
+}
+
+.app-sidebar.collapsed .sidebar-header {
+  justify-content: center;
 }
 
 .sidebar-nav {
@@ -102,7 +140,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.75rem 1rem;
+  padding: 0.75rem;
   border-radius: 0.5rem;
   border: none;
   background: transparent;
@@ -112,6 +150,8 @@ body {
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .nav-item:hover {
@@ -130,6 +170,7 @@ body {
   align-items: center;
   justify-content: center;
   min-width: 24px;
+  flex-shrink: 0;
 }
 
 /* -----------------------------------

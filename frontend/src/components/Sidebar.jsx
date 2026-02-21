@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import '../index.css';
 
 const Sidebar = ({ activeView, setActiveView }) => {
+    const [isExpanded, setIsExpanded] = useState(true);
     const navItems = [
         { id: 'single_crawl', label: 'Single Crawl', icon: '🔍' },
         { id: 'link_collector', label: 'Link Collector', icon: '🔗' },
@@ -14,9 +15,16 @@ const Sidebar = ({ activeView, setActiveView }) => {
     ];
 
     return (
-        <aside className="app-sidebar">
+        <aside className={`app-sidebar ${isExpanded ? 'expanded' : 'collapsed'}`}>
             <div className="sidebar-header">
-                <h2>Vcrawl MVP</h2>
+                {isExpanded && <h2>Vcrawl MVP</h2>}
+                <button
+                    className="sidebar-toggle-btn"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    title={isExpanded ? "Collapse Sidebar" : "Expand Sidebar"}
+                >
+                    {isExpanded ? '◀' : '▶'}
+                </button>
             </div>
 
             <nav className="sidebar-nav">
@@ -26,9 +34,10 @@ const Sidebar = ({ activeView, setActiveView }) => {
                             key={item.id}
                             className={`nav-item ${activeView === item.id ? 'active' : ''}`}
                             onClick={() => setActiveView(item.id)}
+                            title={!isExpanded ? item.label : ''}
                         >
                             <span className="nav-icon">{item.icon}</span>
-                            <span className="nav-label">{item.label}</span>
+                            {isExpanded && <span className="nav-label">{item.label}</span>}
                         </button>
                     ))}
                 </div>
@@ -39,9 +48,10 @@ const Sidebar = ({ activeView, setActiveView }) => {
                             key={item.id}
                             className={`nav-item ${activeView === item.id ? 'active' : ''}`}
                             onClick={() => setActiveView(item.id)}
+                            title={!isExpanded ? item.label : ''}
                         >
                             <span className="nav-icon">{item.icon}</span>
-                            <span className="nav-label">{item.label}</span>
+                            {isExpanded && <span className="nav-label">{item.label}</span>}
                         </button>
                     ))}
                 </div>
