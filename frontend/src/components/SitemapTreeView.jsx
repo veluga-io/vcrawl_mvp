@@ -45,23 +45,40 @@ const SitemapNode = ({ node, depth, selectedUrls, onToggleSelect, onSelectSubtre
     const [isExpanded, setIsExpanded] = useState(depth < 2); // auto-expand first 2 levels
     const hasChildren = node.children.length > 0;
     const link = node.link;
-    const isSelected = selectedUrls.has(link.href);
 
-    // Count selected in this subtree
-    const countSubtree = (n) => {
-        let count = selectedUrls.has(n.link.href) ? 1 : 0;
-        for (const c of n.children) count += countSubtree(c);
-        return count;
-    };
-
+    // Collect all hrefs in this subtree (self + all descendants)
     const collectAllHrefs = (n) => {
         const hrefs = [n.link.href];
         for (const c of n.children) hrefs.push(...collectAllHrefs(c));
         return hrefs;
     };
 
+    const allSubtreeHrefs = collectAllHrefs(node);
+    const selectedCountInSubtree = allSubtreeHrefs.filter(h => selectedUrls.has(h)).length;
+    const isAllSelected = selectedCountInSubtree === allSubtreeHrefs.length && allSubtreeHrefs.length > 0;
+    const isSomeSelected = selectedCountInSubtree > 0 && !isAllSelected;
+
+    // Single-node isSelected (for leaf display and counting in parent)
+    const isSelected = selectedUrls.has(link.href);
+
+    // Count selected in this subtree (for folder badge)
+    const countSubtree = (n) => {
+        let count = selectedUrls.has(n.link.href) ? 1 : 0;
+        for (const c of n.children) count += countSubtree(c);
+        return count;
+    };
+
     const subtreeCount = hasChildren ? countSubtree(node) : 0;
-    const totalSubtree = hasChildren ? collectAllHrefs(node).length : 1;
+    const totalSubtree = allSubtreeHrefs.length;
+
+    // Checkbox handler: subtree toggle for folders, single toggle for leaves
+    const handleCheckboxChange = () => {
+        if (hasChildren) {
+            onSelectSubtree(allSubtreeHrefs, !isAllSelected);
+        } else {
+            onToggleSelect(link.href);
+        }
+    };
 
     const getBadgeClass = (category) => {
         if (category === 'File Download') return 'badge-file';
@@ -96,8 +113,11 @@ const SitemapNode = ({ node, depth, selectedUrls, onToggleSelect, onSelectSubtre
 
                 <input
                     type="checkbox"
-                    checked={isSelected}
-                    onChange={() => onToggleSelect(link.href)}
+                    checked={hasChildren ? isAllSelected : isSelected}
+                    ref={input => {
+                        if (input) input.indeterminate = isSomeSelected;
+                    }}
+                    onChange={handleCheckboxChange}
                     className="link-checkbox"
                 />
 

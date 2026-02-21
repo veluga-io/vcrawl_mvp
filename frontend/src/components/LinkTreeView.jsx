@@ -106,7 +106,7 @@ const LinkFolder = ({ title, links, selectedUrls, onToggleSelect, onSelectGroup 
     );
 };
 
-const LinkTreeView = ({ data, selectedUrls, setSelectedUrls, seedUrl }) => {
+const LinkTreeView = ({ data, setData, selectedUrls, setSelectedUrls, seedUrl }) => {
     const [viewMode, setViewMode] = useState('list'); // 'list' | 'sitemap'
 
     const toggleSelect = (url) => {
@@ -128,24 +128,69 @@ const LinkTreeView = ({ data, selectedUrls, setSelectedUrls, seedUrl }) => {
         setSelectedUrls(newSelected);
     };
 
+    // Delete Selection: remove checked URLs from the result data
+    const handleDeleteSelection = () => {
+        if (selectedUrls.size === 0) return;
+        setData(prev => ({
+            ...prev,
+            internal_links: (prev.internal_links || []).filter(l => !selectedUrls.has(l.href)),
+            external_links: (prev.external_links || []).filter(l => !selectedUrls.has(l.href)),
+        }));
+        setSelectedUrls(new Set());
+    };
+
     // Check if any links have parent_url data (depth > 0 crawl)
     const hasHierarchyData = [...(data.internal_links || []), ...(data.external_links || [])]
         .some(l => l.parent_url && l.parent_url !== '');
 
-    // Prepare CSV data
+    const totalLinks = (data.internal_links || []).length + (data.external_links || []).length;
+
+    // Prepare CSV data — format depends on current view mode
     const handleExportCSV = () => {
-        const header = ["Category", "Link Text", "URL", "Internal/External"];
+        const isSitemapMode = viewMode === 'sitemap';
+
+        const header = isSitemapMode
+            ? ["Depth", "Path", "Parent URL", "URL", "Link Text", "Category", "Internal/External"]
+            : ["Category", "Link Text", "URL", "Internal/External"];
+
+        // Helper: build indented path display (e.g. "· · /about/team")
+        const buildPathDisplay = (href, depth) => {
+            const indent = '· '.repeat(depth);
+            try {
+                const u = new URL(href);
+                return indent + u.pathname + u.search;
+            } catch {
+                return indent + href;
+            }
+        };
+
         const rows = [];
 
+        // Export ALL links (selection not required)
         const processLinks = (linkList, typeStr) => {
             linkList.forEach(link => {
-                if (selectedUrls.has(link.href)) {
-                    rows.push([
-                        `"${link.category}"`,
-                        `"${(link.text || '').replace(/"/g, '""')}"`,
-                        `"${link.href}"`,
-                        `"${typeStr}"`
-                    ].join(','));
+                const d = link.depth ?? 0;
+                if (isSitemapMode) {
+                    rows.push({
+                        depth: d, cols: [
+                            `"${d}"`,
+                            `"${buildPathDisplay(link.href, d).replace(/"/g, '""')}"`,
+                            `"${(link.parent_url || '').replace(/"/g, '""')}"`,
+                            `"${link.href}"`,
+                            `"${(link.text || '').replace(/"/g, '""')}"`,
+                            `"${link.category}"`,
+                            `"${typeStr}"`
+                        ].join(',')
+                    });
+                } else {
+                    rows.push({
+                        depth: 0, cols: [
+                            `"${link.category}"`,
+                            `"${(link.text || '').replace(/"/g, '""')}"`,
+                            `"${link.href}"`,
+                            `"${typeStr}"`
+                        ].join(',')
+                    });
                 }
             });
         };
@@ -153,13 +198,20 @@ const LinkTreeView = ({ data, selectedUrls, setSelectedUrls, seedUrl }) => {
         if (data.internal_links) processLinks(data.internal_links, "Internal");
         if (data.external_links) processLinks(data.external_links, "External");
 
-        const csvContent = [header.join(','), ...rows].join('\n');
+        // In sitemap mode, sort by depth to preserve hierarchy order
+        const dataRows = isSitemapMode
+            ? rows.slice().sort((a, b) => a.depth - b.depth).map(r => r.cols)
+            : rows.map(r => r.cols);
+
+        const csvContent = [header.join(','), ...dataRows].join('\n');
 
         const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `vcrawl_links_export_${Date.now()}.csv`;
+        a.download = isSitemapMode
+            ? `vcrawl_sitemap_export_${Date.now()}.csv`
+            : `vcrawl_links_export_${Date.now()}.csv`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -169,7 +221,7 @@ const LinkTreeView = ({ data, selectedUrls, setSelectedUrls, seedUrl }) => {
     return (
         <div className="link-tree-wrapper">
             <div className="link-tree-controls">
-                <span>Selected: <strong>{selectedUrls.size}</strong> links</span>
+                <span>Selected: <strong>{selectedUrls.size}</strong> / <strong>{totalLinks}</strong> links</span>
                 <div className="link-tree-actions">
                     {/* View Mode Toggle */}
                     {hasHierarchyData && (
@@ -191,15 +243,15 @@ const LinkTreeView = ({ data, selectedUrls, setSelectedUrls, seedUrl }) => {
 
                     <button
                         className="btn-secondary"
-                        onClick={() => setSelectedUrls(new Set())}
+                        onClick={handleDeleteSelection}
                         disabled={selectedUrls.size === 0}
                     >
-                        Clear Selection
+                        Delete Selection
                     </button>
                     <button
                         className="btn-secondary"
                         onClick={handleExportCSV}
-                        disabled={selectedUrls.size === 0}
+                        disabled={totalLinks === 0}
                     >
                         Export CSV
                     </button>

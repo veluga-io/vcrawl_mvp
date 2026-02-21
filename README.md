@@ -162,8 +162,13 @@ Crawl and analyze a website.
 
 - **Live Log Panel**: SSE-streamed crawl progress with pulsing green indicator
 - **📋 List / 🗺️ Sitemap Toggle**: Switch between flat table and hierarchical tree
+- **Sitemap Subtree Selection**: Clicking a parent checkbox selects/deselects all child URLs (with indeterminate state support)
 - **Depth Control**: 0–3 levels of crawl depth
-- **CSV Export**: Export selected links
+- **Export CSV (All Links)**: Always exports all discovered links; format is view-aware:
+  - **Sitemap mode** (7 cols): `Depth`, `Path` (indented with `·` per level), `Parent URL`, `URL`, `Link Text`, `Category`, `Internal/External` — sorted by depth
+  - **List mode** (4 cols): `Category`, `Link Text`, `URL`, `Internal/External`
+- **Delete Selection**: Removes checkbox-selected URLs from the result list (replaces "Clear Selection")
+- **Selection Counter**: Shows `Selected / Total` link count
 
 ## 🐳 Docker Deployment
 

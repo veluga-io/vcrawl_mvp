@@ -150,6 +150,7 @@ const LinkCollectorView = () => {
                 {result && (
                     <LinkTreeView
                         data={result}
+                        setData={setResult}
                         selectedUrls={selectedUrls}
                         setSelectedUrls={setSelectedUrls}
                         seedUrl={crawledUrl}
