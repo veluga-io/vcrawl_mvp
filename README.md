@@ -3,8 +3,9 @@
 A powerful web scraping testing tool built with FastAPI and React, designed to analyze and extract content from websites using Crawl4AI.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
+![Python](https://img.shields.io/badge/python-3.11-blue.svg)
 ![React](https://img.shields.io/badge/react-19.2.0-blue.svg)
+![Crawl4AI](https://img.shields.io/badge/crawl4ai-v0.8.0-orange.svg)
 
 ## 🌟 Features
 
@@ -22,7 +23,7 @@ A powerful web scraping testing tool built with FastAPI and React, designed to a
 
 ## 📋 Prerequisites
 
-- Python 3.11 or higher
+- Python 3.11 (Recommended for stability with `crawl4ai`)
 - Node.js 22.11 or higher
 - npm 11.4 or higher
 
@@ -160,7 +161,7 @@ This will start:
 
 ### Backend
 - **FastAPI**: Modern, fast web framework
-- **Crawl4AI**: Advanced web crawling library
+- **Crawl4AI v0.8.0**: Advanced web crawling library
 - **BeautifulSoup4**: HTML parsing and analysis
 - **html2text**: HTML to Markdown conversion
 - **Playwright**: Browser automation
