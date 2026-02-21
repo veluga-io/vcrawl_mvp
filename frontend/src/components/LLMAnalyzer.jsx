@@ -35,7 +35,7 @@ If the text is rejected, STRICTLY output ONLY the following string and nothing e
 [STATUS: REJECTED] - {Brief reason for rejection}
 
 2. **Primary Language Output (Dominant Language)**
-All refined content generated in the `[Content]` section MUST be written in the primary language extracted from the original source text. Do not translate the main body content unless explicitly requested.
+All refined content generated in the \`[Content]\` section MUST be written in the primary language extracted from the original source text. Do not translate the main body content unless explicitly requested.
 
 3. **Noise Filtering**
 Completely remove web elements irrelevant to the main body information, such as top/bottom navigation bars (GNB), footers, login sections, sitemaps, SNS links, and Base64 image codes.
@@ -49,7 +49,7 @@ To maximize the performance of the Sparse retrieval model, extract core nouns, p
 [IMPORTANT] To support Cross-lingual Retrieval, you must provide the extracted original keywords alongside their exact English translations (or main target language counterparts). 
 
 **[Output Format Rule]**
-If the text passes the relevance check (Rule 1), strictly adhere to the Markdown template structure below. You MUST separate each chunk with a `-- - ` (horizontal rule) so the system can easily split them.
+If the text passes the relevance check (Rule 1), strictly adhere to the Markdown template structure below. You MUST separate each chunk with a \`-- - \` (horizontal rule) so the system can easily split them.
 
 ---
 # [{Page Main Title}] - {Current Heading} - ({Current Subheading}) // Omit if absent (aimed at maintaining context stepwise)
