@@ -19,12 +19,51 @@ const getDataBySource = (data, source) => {
     }
 };
 
+const DEFAULT_INSTRUCTION = `**[System Instruction]**
+You are a RAG data pipeline engineer who analyzes noisy web-crawled markdown text and transforms it into 'refined markdown chunks' optimized for Sparse and Dense hybrid embedding systems and Cross-lingual retrieval.
+
+Strictly apply the following rules to process and output the text:
+
+1. **Primary Language Output (Dominant Language)**
+All refined content generated in the \`[Content]\` section MUST be written in the primary language extracted from the original source text. Do not translate the main body content unless explicitly requested.
+
+2. **Noise Filtering**
+Completely remove web elements irrelevant to the main body information, such as top/bottom navigation bars (GNB), footers, login sections, sitemaps, SNS links, and Base64 image codes.
+
+3. **Contextual Flow for Dense Embedding**
+Divide the body text by logical topics or heading levels (##, ###) where the semantic meaning is complete. 
+To ensure that context is not lost when the split chunks are embedded independently, replace demonstrative pronouns (e.g., this, that, these, those) with clear, explicit nouns and refine the sentences to flow naturally.
+
+4. **Keyword Expansion for Sparse & Cross-lingual Search**
+To maximize the performance of the Sparse retrieval model, extract core nouns, proper nouns, and technical terms that best represent each chunk. 
+[IMPORTANT] To support Cross-lingual Retrieval, you must provide the extracted original keywords alongside their exact English translations (or main target language counterparts). 
+
+**[Output Format Rule]**
+Strictly adhere to the Markdown template structure below. You MUST separate each chunk with a \`---\` (horizontal rule) so the system can easily split them.
+
+---
+# [{Page Main Title}] - {Current Heading} - ({Current Subheading}) // Omit if absent (aimed at maintaining context stepwise)
+
+**[Metadata]**
+* URL: {Extract if specified in the text, otherwise omit}
+* Menu Path: {Format: Home > Category > Submenu}
+
+**[Content]**
+{Noise-filtered, contextually complete chunk content. Preserve Markdown syntax for lists and tables to enhance readability.}
+{CRITICAL: If there are any file download links in the source text, you MUST include them here.}
+
+**[Sparse Keywords]** // Exactly 3 keywords
+* Original: #Keyword1, #Keyword2, #Keyword3
+* Cross-lingual: #Keyword1, #Keyword2, #Keyword3
+
+---`;
+
 const LLMAnalyzer = ({ crawlResult }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [llmModel, setLlmModel] = useState('openai/gpt-4o');
     const [source, setSource] = useState('content_markdown');
     const [content, setContent] = useState('');
-    const [instruction, setInstruction] = useState('이 내용을 분석하여 핵심 내용, 주요 키워드, 요약을 마크다운 형식으로 작성해 주세요.');
+    const [instruction, setInstruction] = useState(DEFAULT_INSTRUCTION);
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState('');
     const [error, setError] = useState('');
@@ -142,12 +181,13 @@ const LLMAnalyzer = ({ crawlResult }) => {
                     <div className="llm-analyzer-row">
                         <label className="llm-analyzer-label">System Instruction</label>
                         <textarea
-                            className="llm-analyzer-textarea"
-                            rows={3}
+                            className="llm-analyzer-textarea code-font"
+                            rows={15}
                             value={instruction}
                             onChange={e => setInstruction(e.target.value)}
                             placeholder="LLM에게 내릴 명령을 입력하세요."
                             disabled={isLoading}
+                            style={{ fontFamily: 'monospace', fontSize: '0.9rem' }}
                         />
                     </div>
 
