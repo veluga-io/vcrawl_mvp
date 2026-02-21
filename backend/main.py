@@ -5,6 +5,14 @@ import uvicorn
 import asyncio
 import sys
 import html2text
+import os
+from crawl4ai import LLMConfig
+from crawl4ai.extraction_strategy import LLMExtractionStrategy
+from pydantic import BaseModel, Field
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Fix for Windows asyncio loop policy
 if sys.platform == 'win32':
@@ -15,6 +23,10 @@ app = FastAPI(title="Crawl4AI Tester")
 class CrawlRequest(BaseModel):
     url: str
     word_count_threshold: int = 10
+    # Full litellm model string, e.g. 'gemini/gemini-3-pro-preview', 'openai/gpt-5-mini', or 'none'
+    llm_model: str = "none"
+    # Custom LLM instruction
+    instruction: str = "Extract the main content, key points, and purpose of this page. Structure the output clearly in markdown."
 
 from bs4 import BeautifulSoup
 
@@ -31,6 +43,7 @@ class CrawlResponse(BaseModel):
     html: str = ""
     content_only_markdown: str = ""  # Main content only in markdown
     content_only_html: str = ""      # Main content only in HTML
+    llm_extraction: str = ""         # Content extracted by LLM
     structure: PageStructure = PageStructure()
     metadata: dict = {}
     error_message: str = ""
@@ -153,12 +166,35 @@ async def crawl(request: CrawlRequest):
             verbose=True
         )
         
+        extraction_strategy = None
+        instruction = request.instruction or "Extract the main content, key points, and purpose of this page. Structure the output clearly in markdown."
+        
+        if request.llm_model != "none" and request.llm_model:
+            model_str = request.llm_model  # e.g. 'gemini/gemini-3-pro-preview'
+            provider = model_str.split('/')[0] if '/' in model_str else model_str
+            
+            if provider == "gemini":
+                api_token = os.getenv("GEMINI_API_KEY")
+                if not api_token:
+                    raise Exception("GEMINI_API_KEY is not set in the environment.")
+            elif provider == "openai":
+                api_token = os.getenv("OPENAI_API_KEY")
+                if not api_token:
+                    raise Exception("OPENAI_API_KEY is not set in the environment.")
+            else:
+                raise Exception(f"Unsupported LLM provider: '{provider}'")
+            
+            extraction_strategy = LLMExtractionStrategy(
+                llm_config=LLMConfig(provider=model_str, api_token=api_token),
+                instruction=instruction
+            )
         
         # Try with networkidle first, but have a fallback
         crawl_config = CrawlerRunConfig(
             wait_until="domcontentloaded",  # More reliable than networkidle
             page_timeout=90000,  # 90 seconds timeout (increased for slow pages)
-            delay_before_return_html=2.0  # Wait 2 seconds before capturing
+            delay_before_return_html=2.0,  # Wait 2 seconds before capturing
+            extraction_strategy=extraction_strategy
         )
         
         async with AsyncWebCrawler(config=browser_config, verbose=True) as crawler:
@@ -194,6 +230,10 @@ async def crawl(request: CrawlRequest):
             print(f"[DEBUG] Cleaned HTML length: {len(result.cleaned_html) if result.cleaned_html else 0}")
             print(f"[DEBUG] Content-only HTML length: {len(content_only_html)}")
             print(f"[DEBUG] Content-only Markdown length: {len(content_only_markdown)}")
+            
+            llm_content = ""
+            if extraction_strategy and result.extracted_content:
+                llm_content = result.extracted_content
 
             return CrawlResponse(
                 success=True,
@@ -201,9 +241,11 @@ async def crawl(request: CrawlRequest):
                 html=result.cleaned_html or result.html or "",
                 content_only_markdown=content_only_markdown,
                 content_only_html=content_only_html,
+                llm_extraction=llm_content,
                 structure=structure_data,
                 metadata={
                     "url": result.url,
+                    "llm_model": request.llm_model
                 }
             )
     except Exception as e:
@@ -211,6 +253,64 @@ async def crawl(request: CrawlRequest):
             success=False,
             error_message=str(e)
         )
+
+
+# ──────────────────────────────────────────────
+# LLM Analyzer – calls litellm directly for clean markdown output
+# ──────────────────────────────────────────────
+
+class AnalyzeRequest(BaseModel):
+    content: str
+    llm_model: str
+    instruction: str = "Analyze the provided content and return a well-structured markdown report."
+
+
+class AnalyzeResponse(BaseModel):
+    success: bool
+    result: str = ""
+    error_message: str = ""
+
+
+@app.post("/api/v1/analyze", response_model=AnalyzeResponse)
+async def analyze(request: AnalyzeRequest):
+    try:
+        if not request.llm_model or request.llm_model == "none":
+            raise Exception("No LLM model selected. Please choose a model from the dropdown.")
+
+        if not request.content.strip():
+            raise Exception("Content is empty. Please provide text to analyze.")
+
+        import litellm
+
+        model_str = request.llm_model
+        provider = model_str.split("/")[0] if "/" in model_str else model_str
+
+        if provider == "gemini":
+            api_key = os.getenv("GEMINI_API_KEY")
+            if not api_key:
+                raise Exception("GEMINI_API_KEY is not set in the environment.")
+        elif provider == "openai":
+            api_key = os.getenv("OPENAI_API_KEY")
+            if not api_key:
+                raise Exception("OPENAI_API_KEY is not set in the environment.")
+        else:
+            raise Exception(f"Unsupported LLM provider: '{provider}'")
+
+        response = litellm.completion(
+            model=model_str,
+            messages=[
+                {"role": "system", "content": request.instruction},
+                {"role": "user",   "content": request.content},
+            ],
+            api_key=api_key,
+        )
+
+        result_text = response.choices[0].message.content or ""
+        return AnalyzeResponse(success=True, result=result_text)
+
+    except Exception as e:
+        return AnalyzeResponse(success=False, error_message=str(e))
+
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)

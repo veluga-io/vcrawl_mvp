@@ -66,6 +66,39 @@ body {
   position: relative;
   display: flex;
   align-items: center;
+  gap: 1rem;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.model-select {
+  padding: 1rem 1.5rem;
+  font-size: 1rem;
+  background-color: rgba(30, 41, 59, 0.5);
+  border: 1px solid var(--border-color);
+  border-radius: 9999px;
+  color: var(--text-primary);
+  backdrop-filter: blur(4px);
+  cursor: pointer;
+  transition: all 0.2s;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.model-select:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.model-select option {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .search-input {
@@ -84,6 +117,258 @@ body {
   outline: none;
   border-color: var(--accent-color);
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.instruction-container {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.instruction-container label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin-left: 0.5rem;
+}
+
+.instruction-textarea {
+  width: 100%;
+  padding: 1rem;
+  font-size: 0.95rem;
+  background-color: rgba(30, 41, 59, 0.3);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  color: var(--text-primary);
+  resize: vertical;
+  min-height: 80px;
+  backdrop-filter: blur(4px);
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.instruction-textarea:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  background-color: rgba(30, 41, 59, 0.5);
+}
+
+/* ── LLM Analyzer Panel ───────────────────────────────── */
+.llm-analyzer-wrapper {
+  margin-top: 1.5rem;
+}
+
+.llm-analyzer-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1.25rem;
+  background: rgba(30, 41, 59, 0.35);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  text-align: left;
+}
+
+.llm-analyzer-toggle:hover {
+  background: rgba(30, 41, 59, 0.55);
+  border-color: var(--accent-color);
+}
+
+.llm-analyzer-toggle.open {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-color: var(--accent-color);
+  background: rgba(30, 41, 59, 0.6);
+}
+
+.llm-analyzer-toggle-icon {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.llm-analyzer-model-badge {
+  margin-left: auto;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.65rem;
+  background: rgba(59, 130, 246, 0.18);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  border-radius: 999px;
+  color: #93c5fd;
+}
+
+.llm-analyzer-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  padding: 1.25rem;
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid var(--accent-color);
+  border-top: none;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.llm-analyzer-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.llm-analyzer-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.llm-analyzer-hint {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0.65;
+}
+
+.llm-analyzer-source-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.llm-source-btn {
+  padding: 0.35rem 0.85rem;
+  font-size: 0.82rem;
+  background: rgba(30, 41, 59, 0.4);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.llm-source-btn:hover {
+  border-color: var(--accent-color);
+  color: var(--text-primary);
+}
+
+.llm-source-btn.active {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: var(--accent-color);
+  color: #93c5fd;
+  font-weight: 600;
+}
+
+.llm-analyzer-textarea {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  font-size: 0.9rem;
+  background: rgba(30, 41, 59, 0.3);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  color: var(--text-primary);
+  resize: vertical;
+  backdrop-filter: blur(4px);
+  transition: all 0.2s;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.llm-analyzer-textarea:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+  background: rgba(30, 41, 59, 0.5);
+}
+
+.llm-analyzer-run-btn {
+  align-self: flex-end;
+  padding: 0.7rem 2rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  border: none;
+  border-radius: 999px;
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+}
+
+.llm-analyzer-run-btn:hover:not(:disabled) {
+  opacity: 0.88;
+  transform: translateY(-1px);
+}
+
+.llm-analyzer-run-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.llm-analyzer-run-btn.loading {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.llm-analyzer-error {
+  padding: 0.75rem 1rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 8px;
+  color: #fca5a5;
+  font-size: 0.88rem;
+}
+
+.llm-analyzer-result {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.llm-analyzer-result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.llm-analyzer-result-body {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 480px;
+  overflow-y: auto;
 }
 
 .search-button {
