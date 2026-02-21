@@ -340,6 +340,8 @@ async def analyze(request: AnalyzeRequest):
 
 class CollectLinksRequest(BaseModel):
     url: str
+    depth: int = 0
+    max_urls: int = 500
 
 class LinkItem(BaseModel):
     href: str
@@ -374,6 +376,7 @@ def categorize_link(url: str, text: str) -> str:
 
 @app.post("/api/v1/collect-links", response_model=CollectLinksResponse)
 async def collect_links(request: CollectLinksRequest):
+    import urllib.parse
     try:
         url_to_crawl = request.url.strip()
         if not url_to_crawl:
@@ -381,42 +384,90 @@ async def collect_links(request: CollectLinksRequest):
 
         if not url_to_crawl.startswith(('http://', 'https://')):
             url_to_crawl = 'https://' + url_to_crawl
+            
+        parsed_seed = urllib.parse.urlparse(url_to_crawl)
+        base_domain = parsed_seed.netloc
+        
+        target_depth = max(0, min(request.depth, 3)) # Cap depth to 3 for safety
+        max_urls = max(1, min(request.max_urls, 1000)) # Cap max URLs to 1000
+        
+        all_internal_items = {} # dict of href -> LinkItem to easily dedup
+        all_external_items = {} 
 
         async with AsyncWebCrawler(verbose=True) as crawler:
-            # We don't need markdown/HTML content as much, we just need links.
-            # But crawl4ai extracts them by default.
-            result = await crawler.arun(url=url_to_crawl)
-
-            if not result.success:
-                raise Exception(f"Crawl failed: {result.error_message}")
-
-            # Extract links dictionary
-            links_dict = result.links if hasattr(result, 'links') and result.links else {}
+            visited_urls = set()
+            current_level_urls = [url_to_crawl]
             
-            internal = links_dict.get('internal', [])
-            external = links_dict.get('external', [])
+            for current_d in range(target_depth + 1):
+                if not current_level_urls:
+                    break
+                    
+                print(f"[DEBUG] Scraping depth {current_d} with {len(current_level_urls)} URLs.")
+                
+                # Fetch current level
+                # Force arun_many if list is larger than 1, otherwise just arun
+                if len(current_level_urls) == 1:
+                    results = [await crawler.arun(url=current_level_urls[0])]
+                else:
+                    results = await crawler.arun_many(urls=current_level_urls)
+                    
+                visited_urls.update(current_level_urls)
+                next_level_urls = set()
+                
+                for res in results:
+                    if not res.success:
+                        continue
+                        
+                    links_dict = res.links if hasattr(res, 'links') and res.links else {}
+                    internal = links_dict.get('internal', [])
+                    external = links_dict.get('external', [])
+                    
+                    # Process internals
+                    for link in internal:
+                        href = link.get('href', '')
+                        text = link.get('text', '').strip()
+                        if not href: continue
+                        
+                        # Dedup and aggregate
+                        if href not in all_internal_items:
+                            category = categorize_link(href, text)
+                            all_internal_items[href] = LinkItem(href=href, text=text, category=category)
+                            
+                        # Queue for next depth if within domain restrictions
+                        if current_d < target_depth:
+                            try:
+                                parsed_href = urllib.parse.urlparse(href)
+                                # Must exactly match base domain. 
+                                # In strict implementations you might allow subdomains, but keeping it simple here.
+                                if parsed_href.netloc == base_domain or not parsed_href.netloc:
+                                    if href not in visited_urls:
+                                        next_level_urls.add(href)
+                            except Exception:
+                                pass # ignore bad URLs for queueing
 
-            internal_items = []
-            for link in internal:
-                href = link.get('href', '')
-                text = link.get('text', '').strip()
-                if not href: continue
-                category = categorize_link(href, text)
-                internal_items.append(LinkItem(href=href, text=text, category=category))
-
-            external_items = []
-            for link in external:
-                href = link.get('href', '')
-                text = link.get('text', '').strip()
-                if not href: continue
-                category = categorize_link(href, text)
-                external_items.append(LinkItem(href=href, text=text, category=category))
+                    # Process externals
+                    for link in external:
+                        href = link.get('href', '')
+                        text = link.get('text', '').strip()
+                        if not href: continue
+                        
+                        if href not in all_external_items:
+                            category = categorize_link(href, text)
+                            all_external_items[href] = LinkItem(href=href, text=text, category=category)
+                            
+                # Enforce limits for next level
+                current_level_urls = list(next_level_urls)
+                if len(visited_urls) + len(current_level_urls) > max_urls:
+                    print(f"[DEBUG] Hit max_urls limit ({max_urls}). Truncating queue.")
+                    remaining_allowance = max_urls - len(visited_urls)
+                    current_level_urls = current_level_urls[:max(0, remaining_allowance)]
 
             return CollectLinksResponse(
                 success=True,
-                internal_links=internal_items,
-                external_links=external_items
+                internal_links=list(all_internal_items.values()),
+                external_links=list(all_external_items.values())
             )
+            
     except Exception as e:
         return CollectLinksResponse(
             success=False,

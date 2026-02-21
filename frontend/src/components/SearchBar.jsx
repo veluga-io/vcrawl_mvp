@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import '../index.css';
 
-const SearchBar = ({ onAnalyze, isLoading }) => {
+const SearchBar = ({ onAnalyze, isLoading, extraControls }) => {
     const [url, setUrl] = useState('');
 
     const handleSubmit = (e) => {
@@ -32,6 +32,11 @@ const SearchBar = ({ onAnalyze, isLoading }) => {
                         {isLoading ? 'Analyzing...' : 'Analyze'}
                     </button>
                 </div>
+                {extraControls && (
+                    <div className="search-extra-controls">
+                        {extraControls}
+                    </div>
+                )}
             </form>
         </div>
     );

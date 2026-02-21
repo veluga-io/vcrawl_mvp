@@ -8,6 +8,7 @@ const LinkCollectorView = () => {
     const [result, setResult] = useState(null);
     const [error, setError] = useState(null);
     const [selectedUrls, setSelectedUrls] = useState(new Set());
+    const [depth, setDepth] = useState(0);
 
     const handleCollect = async (url) => {
         setIsLoading(true);
@@ -27,7 +28,9 @@ const LinkCollectorView = () => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    url: urlToCrawl
+                    url: urlToCrawl,
+                    depth: depth,
+                    max_urls: 500 // Hard limit to prevent infinite crawl loops on huge sites
                 }),
             });
 
@@ -55,7 +58,30 @@ const LinkCollectorView = () => {
             </header>
 
             <div className="view-content padding-top-only">
-                <SearchBar onAnalyze={handleCollect} isLoading={isLoading} />
+                <SearchBar
+                    onAnalyze={handleCollect}
+                    isLoading={isLoading}
+                    extraControls={
+                        <div className="depth-control">
+                            <label className="depth-label" htmlFor="depth-select">
+                                Crawl Depth:
+                            </label>
+                            <select
+                                id="depth-select"
+                                value={depth}
+                                onChange={(e) => setDepth(Number(e.target.value))}
+                                disabled={isLoading}
+                                className="depth-select"
+                            >
+                                <option value={0}>0 (Current Page Only)</option>
+                                <option value={1}>1 (Internal Links)</option>
+                                <option value={2}>2 (Deeper Subpages)</option>
+                                <option value={3}>3 (Max Depth)</option>
+                            </select>
+                            <span className="depth-hint">Higher depth takes significantly longer. Restricted to same domain.</span>
+                        </div>
+                    }
+                />
 
                 {error && (
                     <div className="error-message">

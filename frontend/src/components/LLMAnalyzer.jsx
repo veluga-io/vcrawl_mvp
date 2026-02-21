@@ -19,7 +19,7 @@ const getDataBySource = (data, source) => {
     }
 };
 
-const DEFAULT_INSTRUCTION = `**[System Instruction]**
+const DEFAULT_INSTRUCTION = `
 You are a RAG data pipeline engineer who analyzes noisy web-crawled markdown text and transforms it into 'refined markdown chunks' optimized for Sparse and Dense hybrid embedding systems and Cross-lingual retrieval.
 
 Strictly apply the following rules to process and output the text:
@@ -55,8 +55,7 @@ Strictly adhere to the Markdown template structure below. You MUST separate each
 **[Sparse Keywords]** // Exactly 3 keywords
 * Original: #Keyword1, #Keyword2, #Keyword3
 * Cross-lingual: #Keyword1, #Keyword2, #Keyword3
-
----`;
+`;
 
 const LLMAnalyzer = ({ crawlResult, initiallyOpen = false }) => {
     const [isOpen, setIsOpen] = useState(initiallyOpen);
