@@ -17,8 +17,10 @@ A powerful web scraping testing tool built with FastAPI and React, designed to a
   - Full page HTML
 - **Page Structure Analysis**: Identifies headers, navigation, main content, footers, and ads
 - **LLM Analyzer**: Analyze crawled content using LLM models (Gemini, OpenAI)
+- **Dashboard Persistence**: All menus and tasks (Batch, LLM Batch) remain active and maintain their state even when navigating between different views.
 - **Link Collector**: Multi-depth link discovery with:
   - **Live Log Streaming (SSE)**: Real-time crawl progress displayed in the UI
+  - **Performance Optimized Rendering**: Uses `React.memo` and pagination (200 links/page) to handle thousands of URLs without browser lag or crashes.
   - **Sitemap Tree View**: Hierarchical parent→child URL visualization
   - **Flat List View**: Traditional sortable table with category badges
   - CSV export and direct Batch Crawl integration

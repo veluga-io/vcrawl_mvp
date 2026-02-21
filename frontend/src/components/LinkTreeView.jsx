@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import SitemapTreeView from './SitemapTreeView';
 import '../index.css';
 
-const LinkNodeRow = ({ link, isSelected, onToggleSelect }) => {
+const LinkNodeRow = React.memo(({ link, isSelected, onToggleSelect }) => {
     // Generate badge class based on category
     const getBadgeClass = (category) => {
         if (category === 'File Download') return 'badge-file';
@@ -37,10 +37,11 @@ const LinkNodeRow = ({ link, isSelected, onToggleSelect }) => {
             </td>
         </tr>
     );
-};
+});
 
 const LinkFolder = ({ title, links, selectedUrls, onToggleSelect, onSelectGroup }) => {
     const [isExpanded, setIsExpanded] = useState(true);
+    const [visibleCount, setVisibleCount] = useState(200);
 
     const allGroupUrls = links.map(l => l.href);
     const selectedInGroup = allGroupUrls.filter(url => selectedUrls.has(url));
@@ -90,7 +91,7 @@ const LinkFolder = ({ title, links, selectedUrls, onToggleSelect, onSelectGroup 
                             </tr>
                         </thead>
                         <tbody>
-                            {links.map((link, idx) => (
+                            {links.slice(0, visibleCount).map((link, idx) => (
                                 <LinkNodeRow
                                     key={`${link.href}-${idx}`}
                                     link={link}
@@ -98,6 +99,19 @@ const LinkFolder = ({ title, links, selectedUrls, onToggleSelect, onSelectGroup 
                                     onToggleSelect={onToggleSelect}
                                 />
                             ))}
+                            {visibleCount < links.length && (
+                                <tr>
+                                    <td colSpan="4" style={{ textAlign: 'center', padding: '12px' }}>
+                                        <button
+                                            className="btn-secondary"
+                                            onClick={() => setVisibleCount(v => v + 200)}
+                                            style={{ width: '100%', maxWidth: '300px' }}
+                                        >
+                                            + 더 보기 ({links.length - visibleCount}개 남음)
+                                        </button>
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
@@ -109,24 +123,28 @@ const LinkFolder = ({ title, links, selectedUrls, onToggleSelect, onSelectGroup 
 const LinkTreeView = ({ data, setData, selectedUrls, setSelectedUrls, seedUrl, onBatchCrawl }) => {
     const [viewMode, setViewMode] = useState('list'); // 'list' | 'sitemap'
 
-    const toggleSelect = (url) => {
-        const newSelected = new Set(selectedUrls);
-        if (newSelected.has(url)) {
-            newSelected.delete(url);
-        } else {
-            newSelected.add(url);
-        }
-        setSelectedUrls(newSelected);
-    };
-
-    const selectGroup = (urls, shouldSelect) => {
-        const newSelected = new Set(selectedUrls);
-        urls.forEach(url => {
-            if (shouldSelect) newSelected.add(url);
-            else newSelected.delete(url);
+    const toggleSelect = useCallback((url) => {
+        setSelectedUrls(prev => {
+            const newSelected = new Set(prev);
+            if (newSelected.has(url)) {
+                newSelected.delete(url);
+            } else {
+                newSelected.add(url);
+            }
+            return newSelected;
         });
-        setSelectedUrls(newSelected);
-    };
+    }, [setSelectedUrls]);
+
+    const selectGroup = useCallback((urls, shouldSelect) => {
+        setSelectedUrls(prev => {
+            const newSelected = new Set(prev);
+            urls.forEach(url => {
+                if (shouldSelect) newSelected.add(url);
+                else newSelected.delete(url);
+            });
+            return newSelected;
+        });
+    }, [setSelectedUrls]);
 
     // Delete Selection: remove checked URLs from the result data
     const handleDeleteSelection = () => {

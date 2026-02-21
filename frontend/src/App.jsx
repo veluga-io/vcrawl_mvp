@@ -19,40 +19,34 @@ function App() {
     setActiveView('batch_crawl');
   };
 
-  const renderActiveView = () => {
-    switch (activeView) {
-      case 'single_crawl':
-        return <SingleCrawlView />;
-      case 'link_collector':
-        return <LinkCollectorView onBatchCrawl={handleBatchCrawl} />;
-      case 'batch_crawl':
-        return (
-          <BatchCrawlView
-            initialLinks={batchLinks}
-            onClearBatchLinks={() => setBatchLinks([])}
-          />
-        );
-      case 'llm_analyzer':
-        return <LLMAnalyzerView />;
-      case 'llm_batch':
-        return <LLMBatchView />;
-      case 'settings':
-        return (
-          <PlaceholderView
-            title="Settings"
-            description="Manage your API keys, crawler configurations, and default LLM preferences."
-          />
-        );
-      default:
-        return <SingleCrawlView />;
-    }
-  };
-
   return (
     <div className="dashboard-layout">
       <Sidebar activeView={activeView} setActiveView={setActiveView} />
       <main className="dashboard-main-content">
-        {renderActiveView()}
+        <div style={{ display: activeView === 'single_crawl' || activeView === 'default' ? 'block' : 'none', height: '100%' }}>
+          <SingleCrawlView />
+        </div>
+        <div style={{ display: activeView === 'link_collector' ? 'block' : 'none', height: '100%' }}>
+          <LinkCollectorView onBatchCrawl={handleBatchCrawl} />
+        </div>
+        <div style={{ display: activeView === 'batch_crawl' ? 'block' : 'none', height: '100%' }}>
+          <BatchCrawlView
+            initialLinks={batchLinks}
+            onClearBatchLinks={() => setBatchLinks([])}
+          />
+        </div>
+        <div style={{ display: activeView === 'llm_analyzer' ? 'block' : 'none', height: '100%' }}>
+          <LLMAnalyzerView />
+        </div>
+        <div style={{ display: activeView === 'llm_batch' ? 'block' : 'none', height: '100%' }}>
+          <LLMBatchView />
+        </div>
+        <div style={{ display: activeView === 'settings' ? 'block' : 'none', height: '100%' }}>
+          <PlaceholderView
+            title="Settings"
+            description="Manage your API keys, crawler configurations, and default LLM preferences."
+          />
+        </div>
       </main>
     </div>
   );

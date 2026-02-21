@@ -21,7 +21,7 @@ If the text is rejected, STRICTLY output ONLY the following string and nothing e
 All refined content generated in the \`[Content]\` section MUST be written in the primary language extracted from the original source text. Do not translate the main body content unless explicitly requested.
 
 3. **Noise Filtering**
-Completely remove web elements irrelevant to the main body information, such as top/bottom navigation bars (GNB), footers, login sections, sitemaps, SNS links, and Base64 image codes.
+Completely remove web elements irrelevant to the main body information, such as top/bottom navigation bars (GNB), footers, login sections, sitemaps, SNS links, list of menus, and Base64 image codes.
 
 4. **Contextual Flow for Dense Embedding**
 Divide the body text by logical topics or heading levels (##, ###) where the semantic meaning is complete. 

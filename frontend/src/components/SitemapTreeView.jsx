@@ -42,7 +42,7 @@ function buildTree(links, seedUrl) {
 }
 
 const SitemapNode = ({ node, depth, selectedUrls, onToggleSelect, onSelectSubtree }) => {
-    const [isExpanded, setIsExpanded] = useState(depth < 2); // auto-expand first 2 levels
+    const [isExpanded, setIsExpanded] = useState(depth === 0); // only expand depth 0 (root) by default
     const hasChildren = node.children.length > 0;
     const link = node.link;
 
