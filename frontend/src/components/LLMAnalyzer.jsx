@@ -58,8 +58,8 @@ Strictly adhere to the Markdown template structure below. You MUST separate each
 
 ---`;
 
-const LLMAnalyzer = ({ crawlResult }) => {
-    const [isOpen, setIsOpen] = useState(false);
+const LLMAnalyzer = ({ crawlResult, initiallyOpen = false }) => {
+    const [isOpen, setIsOpen] = useState(initiallyOpen);
     const [llmModel, setLlmModel] = useState('openai/gpt-4o');
     const [source, setSource] = useState('content_markdown');
     const [content, setContent] = useState('');
