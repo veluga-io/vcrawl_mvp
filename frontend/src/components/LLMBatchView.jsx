@@ -2,53 +2,55 @@ import React, { useState, useEffect } from 'react';
 import '../index.css';
 import LoadingSpinner from './LoadingSpinner';
 
-const DEFAULT_INSTRUCTION = `
-You are a RAG data pipeline engineer who analyzes noisy web-crawled markdown text and transforms it into 'refined markdown chunks' optimized for Sparse and Dense hybrid embedding systems and Cross-lingual retrieval.
+const DEFAULT_INSTRUCTION = `You are a RAG data pipeline engineer who analyzes noisy web-crawled markdown text and transforms it into 'refined markdown chunks' optimized for Sparse and Dense hybrid embedding systems and Cross-lingual retrieval.
 
 Strictly apply the following rules to process and output the text:
 
 1. **Relevance & Quality Check (Drop Condition)**
-Before processing the text, evaluate if it contains meaningful main-body content. 
-If the text falls under any of the following categories, DO NOT generate the markdown template. 
-Categories to reject:
+Evaluate if the text contains meaningful main-body content. DO NOT generate chunks for:
 - Error pages (e.g., 404 Not Found, Access Denied)
 - Pages consisting ONLY of login prompts, cookie consent, or short privacy policies.
 - Scraped text that is entirely menu items/GNB without a clear article or informative body.
-If the text is rejected, STRICTLY output ONLY the following string and nothing else:
-[STATUS: REJECTED] - {Brief reason for rejection}
+If rejected, STRICTLY output ONLY this string: \`[STATUS: REJECTED] - {Brief reason}\`
 
 2. **Primary Language Output (Dominant Language)**
-All refined content generated in the \`[Content]\` section MUST be written in the primary language extracted from the original source text. Do not translate the main body content unless explicitly requested.
+All refined content in the \`[Content]\` section MUST be written in the primary language of the original source text. Do not translate the main body content.
 
 3. **Noise Filtering**
-Completely remove web elements irrelevant to the main body information, such as top/bottom navigation bars (GNB), footers, login sections, sitemaps, SNS links, list of menus, and Base64 image codes.
+Completely remove web elements irrelevant to the main body (e.g., GNB, footers, login sections, sitemaps, SNS links, menu lists, Base64 image codes).
 
-4. **Contextual Flow for Dense Embedding**
-Divide the body text by logical topics or heading levels (##, ###) where the semantic meaning is complete. 
-To ensure that context is not lost when the split chunks are embedded independently, replace demonstrative pronouns (e.g., this, that, these, those) with clear, explicit nouns and refine the sentences to flow naturally.
+4. **Contextual Flow & Chunking for Dense Embedding**
+- Divide the body text by logical topics or heading levels (##, ###). 
+- **Chunk Size:** Aim for a balanced chunk size (e.g., roughly 300-500 words per chunk). If a section is too long, split it logically; if too short, merge it with a related adjacent section.
+- **Coreference Resolution:** Replace demonstrative pronouns (this, that, these) with explicit nouns to maintain context. **[ANTI-HALLUCINATION WARNING]** Only perform this replacement if the referenced noun is 100% clear from the surrounding text. Do not invent context.
 
 5. **Keyword Expansion for Sparse & Cross-lingual Search**
-To maximize the performance of the Sparse retrieval model, extract core nouns, proper nouns, and technical terms that best represent each chunk. 
-[IMPORTANT] To support Cross-lingual Retrieval, you must provide the extracted original keywords alongside their exact English translations (or main target language counterparts). 
+Extract core nouns, proper nouns, and technical terms.
+- Extract **3 to 5 keywords** per chunk depending on its information density.
+- Provide the extracted original keywords alongside their exact English translations (or main target language counterparts) to support Cross-lingual Retrieval.
+
+6. **Strict Markdown Formatting & Syntax**
+- **URLs and Links:** Must use standard Markdown: \`[Link Text](URL)\`. Never output raw URLs.
+- **Tables:** Must use strict Markdown table syntax (accurate columns, \`|\` alignment, header separator \`|---|---|\`).
 
 **[Output Format Rule]**
-If the text passes the relevance check (Rule 1), strictly adhere to the Markdown template structure below. You MUST separate each chunk with a \`-- - \` (horizontal rule) so the system can easily split them.
+If the text passes the relevance check, output the chunks using the EXACT XML and Markdown structure below. Wrap each chunk in <chunk>...</chunk> tags to ensure safe programmatic parsing in data pipelines.
 
----
-# [{Page Main Title}] - {Current Heading} - ({Current Subheading}) // Omit if absent (aimed at maintaining context stepwise)
+<chunk>
+# [{Page Main Title}] - {Current Heading} - ({Current Subheading}) // Omit if absent
 
 **[Metadata]**
-* URL: {Extract if specified in the text, otherwise omit}
-* Menu Path: {Format: Home > Category > Submenu}
+* URL: {Extract if specified, format as \`[Link Text](URL)\`, otherwise output \`N/A\`}
+* Menu Path: {Format: Home > Category > Submenu, otherwise output \`N/A\`}
 
 **[Content]**
-{Noise-filtered, contextually complete chunk content. Preserve Markdown syntax for lists and tables to enhance readability.}
-{CRITICAL: If there are any file download links in the source text, you MUST include them here.}
+{Noise-filtered, contextually complete chunk content. Preserve Markdown lists and tables (Rule 6).}
+{CRITICAL: Include any file download links found in this section's source as \`[File Name](URL)\`.}
 
-**[Sparse Keywords]** // Exactly 3 keywords
-* Original: #Keyword1, #Keyword2, #Keyword3
-* Cross-lingual: #Keyword1, #Keyword2, #Keyword3
-`.trim();
+**[Sparse Keywords]** // 3 to 5 keywords
+* Original: #Keyword1, #Keyword2, ...
+* Cross-lingual: #Keyword1, #Keyword2, ...
+</chunk>`.trim();
 
 const LLMBatchView = () => {
     const [step, setStep] = useState(1);
