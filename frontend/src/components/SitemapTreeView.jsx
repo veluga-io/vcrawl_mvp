@@ -17,8 +17,14 @@ function buildTree(links, seedUrl) {
     }
 
     // Recursive builder
-    function buildNode(link) {
-        const children = (childrenMap.get(link.href) || []).map(buildNode);
+    function buildNode(link, currentPath = new Set()) {
+        // Prevent infinite recursion from circular dependencies
+        if (currentPath.has(link.href)) {
+            return { link, children: [] };
+        }
+        
+        const nextPath = new Set(currentPath).add(link.href);
+        const children = (childrenMap.get(link.href) || []).map(c => buildNode(c, nextPath));
         return { link, children };
     }
 
