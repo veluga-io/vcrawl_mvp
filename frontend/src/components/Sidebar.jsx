@@ -18,7 +18,7 @@ const Sidebar = ({ activeView, setActiveView }) => {
     return (
         <aside className={`app-sidebar ${isExpanded ? 'expanded' : 'collapsed'}`}>
             <div className="sidebar-header">
-                {isExpanded && <h2>Vcrawl MVP</h2>}
+                {isExpanded && <img src="/veluga_logo.png" alt="Veluga Logo" className="sidebar-logo" />}
                 <button
                     className="sidebar-toggle-btn"
                     onClick={() => setIsExpanded(!isExpanded)}

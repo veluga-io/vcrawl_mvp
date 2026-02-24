@@ -82,16 +82,12 @@ body {
   box-sizing: border-box;
 }
 
-.sidebar-header h2 {
+.sidebar-logo {
+  max-width: 160px;
+  max-height: 40px;
+  object-fit: contain;
   margin: 0;
-  font-size: 1.5rem;
-  font-weight: 800;
-  background: linear-gradient(to right, #60a5fa, #a855f7);
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
-  white-space: nowrap;
-  overflow: hidden;
+  display: block;
 }
 
 .sidebar-toggle-btn {
